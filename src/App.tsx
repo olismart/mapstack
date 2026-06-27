@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { GeoJSON } from 'geojson';
-import type { SearchResult, ModalMode } from './types';
+import type { SearchResult, ModalMode, MapLayer } from './types';
 import { useMapLayers } from './hooks/useMapLayers';
 import MapView from './components/MapView';
 import LayerPanel from './components/LayerPanel';
@@ -46,6 +46,45 @@ function getGeoJSONBounds(data: GeoJSON): { center: [number, number]; zoom: numb
   return { center, zoom };
 }
 
+function getCombinedBounds(layers: MapLayer[]): { center: [number, number]; zoom: number } | null {
+  let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+
+  function walkCoords(coords: any) {
+    if (!coords) return;
+    if (typeof coords[0] === 'number') {
+      const [lng, lat] = coords;
+      if (lat != null) { if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat; }
+      if (lng != null) { if (lng < minLng) minLng = lng; if (lng > maxLng) maxLng = lng; }
+    } else {
+      coords.forEach(walkCoords);
+    }
+  }
+
+  function walkGeometry(geom: any) {
+    if (!geom) return;
+    if (geom.type === 'GeometryCollection') geom.geometries.forEach(walkGeometry);
+    else walkCoords(geom.coordinates);
+  }
+
+  for (const layer of layers) {
+    if (!layer.data) continue;
+    if (layer.data.type === 'FeatureCollection') layer.data.features.forEach((f: any) => walkGeometry(f.geometry));
+    else if (layer.data.type === 'Feature') walkGeometry(layer.data.geometry);
+    else if (layer.data.type === 'GeometryCollection') layer.data.geometries.forEach((g: any) => walkGeometry(g));
+    else walkCoords(layer.data.coordinates);
+  }
+
+  if (minLat === Infinity) return null;
+  const center: [number, number] = [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
+  const span = Math.max(maxLat - minLat, maxLng - minLng);
+  let zoom = 13;
+  if (span > 5) zoom = 8;
+  else if (span > 1) zoom = 10;
+  else if (span > 0.2) zoom = 12;
+  else if (span > 0.05) zoom = 14;
+  else zoom = 16;
+  return { center, zoom };
+}
 export default function App() {
   const {
     layers, addLayer, addLayerWithData, removeLayer, toggleLayer,
@@ -55,6 +94,18 @@ export default function App() {
   const [modal, setModal] = useState<ModalMode>(null);
   const [flyTo, setFlyTo] = useState<{ center: [number, number]; zoom?: number } | null>(null);
   const [map, setMap] = useState<LeafletMap | null>(null);
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!map || initializedRef.current) return;
+    initializedRef.current = true;
+    const visibleWithData = layers.filter((l) => l.visible && l.data !== null);
+    if (visibleWithData.length === 0) return;
+    const bounds = getCombinedBounds(visibleWithData);
+    if (bounds) {
+      map.setView(bounds.center, bounds.zoom);
+    }
+  }, [map, layers]);
 
   const handleSearchResult = useCallback((result: SearchResult) => {
     const pointFeature: GeoJSON = {

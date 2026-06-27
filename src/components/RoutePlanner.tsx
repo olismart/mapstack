@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { GeoJSON } from 'geojson';
+import type { RouteProfile } from '../types';
 import { getRoute } from '../utils/osrm';
 import { searchPlaces } from '../utils/nominatim';
 
@@ -35,6 +36,7 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<RouteProfile>('driving');
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
@@ -50,6 +52,12 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
 
     const trimmed = query.trim();
     if (trimmed.length < 2) {
+      // Clear any pending timer for this index
+      const existing = timers.current.get(index);
+      if (existing) {
+        clearTimeout(existing);
+        timers.current.delete(index);
+      }
       setWaypoints((prev) => {
         const next = [...prev];
         next[index] = { ...next[index], results: [], searching: false };
@@ -129,11 +137,13 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
       const valid = waypoints.filter((wp) => wp.confirmed);
       if (valid.length < 2) throw new Error('Search for at least two locations');
 
-      const route = await getRoute(valid.map((wp) => ({ lat: wp.lat, lon: wp.lon, label: wp.label })));
+      const route = await getRoute(valid.map((wp) => ({ lat: wp.lat, lon: wp.lon, label: wp.label })), profile);
       const distKm = (route.distance / 1000).toFixed(1);
       const durMin = Math.round(route.duration / 60);
 
-      onRouteCreated(`Route (${distKm} km, ${durMin} min)`, route.geometry, route.distance, route.duration);
+      const profName = profile.charAt(0).toUpperCase() + profile.slice(1);
+      const profEmoji = profile === 'driving' ? 'ð' : profile === 'walking' ? 'ð¶' : 'ð²';
+      onRouteCreated(`${profEmoji} ${profName} (${distKm} km, ${durMin} min)`, route.geometry, route.distance, route.duration);
       onClose();
     } catch (err: any) {
       setError(err.message ?? 'Failed to fetch route');
@@ -142,14 +152,32 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
     }
   }
 
-  const allConfirmed = waypoints.every((wp) => wp.confirmed);
+  const allConfirmed = waypoints.length >= 2 && waypoints.every((wp) => wp.confirmed);
 
   return (
     <form onSubmit={handleSubmit}>
       <p style={{ fontSize: 12, color: '#667085', marginBottom: 12 }}>
         Type an address, city or point of interest for each stop. The route comes
-        from the public OSRM demo server (driving).
+        from the public OSRM demo server.
       </p>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: '#344054', display: 'block', marginBottom: 6 }}>
+          Travel mode
+        </label>
+        <div className="profile-toggle">
+          {(['driving', 'walking', 'cycling'] as RouteProfile[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`profile-btn${profile === p ? ' active' : ''}`}
+              onClick={() => setProfile(p)}
+            >
+              {p === 'driving' ? '🚗' : p === 'walking' ? '🚶' : '🚲'} {p.charAt(0).toUpperCase() + p.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {waypoints.map((wp, i) => (
         <div key={i} style={{ marginBottom: 10 }}>
@@ -172,7 +200,7 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
               {wp.confirmed && <span style={{ position: 'absolute', right: 8, top: 8, fontSize: 12, color: '#3cb44b', fontWeight: 600 }}>OK</span>}
 
               {wp.results.length > 0 && !wp.confirmed && (
-                <ul className="search-results" style={{ position: 'absolute', left: 0, right: 0, zIndex: 10 }}>
+                <ul className="search-results">
                   {wp.results.map((r, ri) => (
                     <li key={ri} className="search-result-item" onClick={() => pick(i, r)}>
                       {r.displayName}

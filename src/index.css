@@ -378,3 +378,9 @@ html, body, #root {
   flex-wrap: wrap;
 }
 
+
+/* Profile toggle */
+.profile-toggle{display:flex;gap:6px}
+.profile-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#667085;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.profile-btn:hover{background:#f9fafb;border-color:#98a2b3}
+.profile-btn.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}

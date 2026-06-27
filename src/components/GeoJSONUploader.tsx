@@ -25,6 +25,8 @@ export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderPr
       }
     };
     reader.readAsText(file);
+    // Reset so the same file can be re-selected
+    e.target.value = '';
   }
 
   function handleSubmit(e: React.FormEvent) {

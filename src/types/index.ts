@@ -51,6 +51,8 @@ export interface RouteInfo {
 
 // ─── App State ─────────────────────────────────────────────────────
 
+export type RouteProfile = 'driving' | 'walking' | 'cycling';
+
 export type ModalMode = 'add-geojson' | 'add-route' | 'search' | null;
 
 export interface AppState {

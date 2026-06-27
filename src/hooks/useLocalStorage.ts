@@ -24,11 +24,16 @@ export function useLocalStorage<T>(
   const setValue = useCallback(
     (value: T | ((prev: T) => T)) => {
       setStoredValue((prev) => {
-        const next = value instanceof Function ? value(prev) : value;
+        const next = typeof value === 'function' ? (value as (prev: T) => T)(prev) : value;
         try {
-          localStorage.setItem(storageKey, JSON.stringify(next));
-        } catch {
-          // storage full or unavailable — silently degrade
+          const serialized = JSON.stringify(next);
+          localStorage.setItem(storageKey, serialized);
+        } catch (err) {
+          // storage full or unavailable — warn so the user knows data wasn't persisted
+          console.warn(
+            `[Mapstack] Failed to persist "${storageKey}" to localStorage (${err instanceof DOMException ? err.name : 'unknown error'}). ` +
+            `Data may be too large or storage is unavailable.`,
+          );
         }
         return next;
       });

@@ -21,6 +21,7 @@ export function useNominatim() {
     if (trimmed.length < 2) {
       setResults([]);
       setError(null);
+      setLoading(false);
       return;
     }
 
