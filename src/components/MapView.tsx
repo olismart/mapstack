@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
+import type { Map as LeafletMap } from 'leaflet';
 import {
   MapContainer,
   TileLayer,
@@ -25,7 +26,7 @@ function FlyTo({ center, zoom }: { center?: [number, number]; zoom?: number }) {
 }
 
 // ─── Sub-component to expose map instance to parent ───────────────
-function MapEventHandler({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
+function MapEventHandler({ onMapReady }: { onMapReady: (map: LeafletMap) => void }) {
   useMapEvents({
     moveend: () => {},
   });
@@ -51,7 +52,7 @@ function makeStyle(style?: LayerStyle): any {
 interface MapViewProps {
   layers: MapLayer[];
   flyTo?: { center: [number, number]; zoom?: number } | null;
-  onMapInit?: (map: L.Map) => void;
+  onMapInit?: (map: LeafletMap) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────

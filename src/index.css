@@ -140,6 +140,11 @@ html, body, #root {
 .btn-danger {
   color: #d92d20;
   border-color: #fecdca;
+}
+
+.btn-danger:hover {
+  background: #fef3f2;
+}
 
 /* ─── Layer Items ───────────────────────────────────────────────── */
 .layer-item {
@@ -373,8 +378,3 @@ html, body, #root {
   flex-wrap: wrap;
 }
 
-}
-
-.btn-danger:hover {
-  background: #fef3f2;
-}
