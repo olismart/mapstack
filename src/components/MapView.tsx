@@ -39,6 +39,51 @@ function MapViewportController({ target }: { target?: ViewTarget | null }) {
   return null;
 }
 
+// ─── Sub-component to observe container resize & invalidate Leaflet size ───
+function MapResizeHandler() {
+  const map = useMap();
+
+  useEffect(() => {
+    // Invalidate immediately, after brief delays to allow mobile layout/toolbars to settle
+    const t1 = setTimeout(() => {
+      map.invalidateSize({ pan: false });
+    }, 100);
+    const t2 = setTimeout(() => {
+      map.invalidateSize({ pan: false });
+    }, 400);
+
+    const container = map.getContainer();
+    if (!container || typeof ResizeObserver === 'undefined') {
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ pan: false });
+    });
+    observer.observe(container);
+
+    // Also handle window orientation and resize events directly
+    const handleWindowResize = () => {
+      map.invalidateSize({ pan: false });
+    };
+    window.addEventListener('resize', handleWindowResize);
+    window.addEventListener('orientationchange', handleWindowResize);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      observer.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
+      window.removeEventListener('orientationchange', handleWindowResize);
+    };
+  }, [map]);
+
+  return null;
+}
+
 // ─── Sub-component to expose map instance to parent ───────────────
 function MapEventHandler({ onMapReady }: { onMapReady: (map: LeafletMap) => void }) {
   useMapEvents({
@@ -154,11 +199,14 @@ export default function MapView({ layers, viewTarget, userLocation, onMapInit }:
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          keepBuffer={4}
         />
 
         <MapEventHandler
           onMapReady={(map) => mapInitRef.current?.(map)}
         />
+
+        <MapResizeHandler />
 
         <MapViewportController target={viewTarget} />
 
