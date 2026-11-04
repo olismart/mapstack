@@ -17,9 +17,18 @@
   --text-muted: #a1a1aa;
 
   --danger: #ef4444;
+
+  /* Consistent layout margins & radius tokens */
+  --screen-margin: 16px;
+  --panel-radius: 20px;
+  --card-radius: 6px;
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-lg: 20px;
+
+  /* Consistent shadows */
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-input-panel: 0 16px 48px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────── */
@@ -78,25 +87,39 @@ input, button, textarea, select {
 /* Reposition leaflet controls for mobile-first layout */
 .leaflet-bottom.leaflet-left,
 .leaflet-bottom.leaflet-right {
-  bottom: 90px;
+  bottom: calc(var(--screen-margin) + 70px);
 }
 
 .leaflet-top.leaflet-right {
-  top: 16px;
-  right: 16px;
+  top: var(--screen-margin);
+  right: var(--screen-margin);
 }
 
 .leaflet-control-zoom {
+  margin: 0 !important;
   border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  border-radius: var(--panel-radius) !important;
+  box-shadow: var(--shadow-panel) !important;
   overflow: hidden;
+  background: var(--surface-translucent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .leaflet-control-zoom a {
-  background: var(--surface) !important;
+  background: transparent !important;
   color: var(--text-primary) !important;
   border-bottom: 1px solid var(--border) !important;
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+  font-family: var(--font-mono) !important;
+  font-size: 16px !important;
+  transition: all 0.15s ease-out;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-bottom: none !important;
 }
 
 .leaflet-control-zoom a:hover {
@@ -114,8 +137,7 @@ input, button, textarea, select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 16px env(safe-area-inset-bottom, 16px);
-  margin-bottom: 16px;
+  padding: 0 var(--screen-margin) calc(env(safe-area-inset-bottom, 0px) + var(--screen-margin));
   pointer-events: none;
   gap: 10px;
 }
@@ -129,9 +151,9 @@ input, button, textarea, select {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   padding: 6px;
-  border-radius: 40px;
+  border-radius: var(--panel-radius);
   border: 1px solid var(--border);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-panel);
   max-width: 380px;
   width: 100%;
 }
@@ -144,7 +166,7 @@ input, button, textarea, select {
   gap: 6px;
   padding: 10px 12px;
   border: none;
-  border-radius: 30px;
+  border-radius: calc(var(--panel-radius) - 6px);
   background: transparent;
   color: var(--text-primary);
   font-size: 13px;
@@ -166,7 +188,6 @@ input, button, textarea, select {
   background: var(--accent);
   color: #ffffff;
 }
-
 
 /* ─── Standalone Layer Cards ─────────────────────────────────────── */
 .layer-card-stack {
@@ -190,16 +211,16 @@ input, button, textarea, select {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--card-radius);
   padding: 10px 14px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-panel);
   cursor: pointer;
   transition: all 0.15s ease-out;
 }
 
 .layer-card:hover {
   border-color: var(--border-strong);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-panel);
 }
 
 .layer-card-hidden {
@@ -376,42 +397,41 @@ input, button, textarea, select {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: transparent;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: flex-end;
   justify-content: center;
   z-index: 2000;
+  padding: 0 var(--screen-margin) calc(env(safe-area-inset-bottom, 0px) + var(--screen-margin));
   animation: fadeIn 0.15s ease-out;
 }
 
 @media (min-width: 640px) {
   .modal-overlay {
     align-items: center;
+    padding: var(--screen-margin);
   }
 }
 
 .modal {
   background: var(--surface);
-  border-top-left-radius: var(--radius-lg);
-  border-top-right-radius: var(--radius-lg);
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  padding: 20px;
+  border-radius: var(--panel-radius);
+  padding: 22px;
   width: 100%;
   max-width: 520px;
-  max-height: 85vh;
+  max-height: calc(100vh - (var(--screen-margin) * 2));
   overflow-y: auto;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-input-panel);
   border: 1px solid var(--border);
   animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (min-width: 640px) {
   .modal {
-    border-radius: var(--radius-lg);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--shadow-input-panel);
     animation: zoomIn 0.15s ease-out;
   }
 }
