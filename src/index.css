@@ -413,3 +413,64 @@ html, body, #root {
   word-break: break-word;
 }
 
+
+/* ─── Waypoint Teardrop Pin Markers ─────────────────────────────── */
+.waypoint-pin-leaflet {
+  background: transparent !important;
+  border: none !important;
+}
+
+.waypoint-pin-container {
+  position: relative;
+  width: 28px;
+  height: 36px;
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35));
+}
+
+.waypoint-pin-container:hover {
+  transform: translateY(-3px) scale(1.1);
+  z-index: 1000 !important;
+}
+
+.waypoint-pin-body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  background-color: var(--pin-color, #e11d48);
+  border: 2px solid #ffffff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.waypoint-pin-icon {
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.waypoint-pin-icon svg {
+  display: block;
+}
+
+.waypoint-pin-shadow {
+  position: absolute;
+  bottom: 0px;
+  left: 7px;
+  width: 14px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  filter: blur(1px);
+}
+

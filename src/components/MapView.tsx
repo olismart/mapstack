@@ -10,6 +10,7 @@ import {
 } from 'react-leaflet';
 import type { GeoJSON as GeoJSONType, Feature } from 'geojson';
 import type { MapLayer, LayerStyle, ViewTarget } from '../types';
+import { classifyWaypoint, createWaypointMarkerHtml } from '../utils/waypointMarkers';
 
 // ─── Default map centre (London) ──────────────────────────────────
 const DEFAULT_CENTER: [number, number] = [51.5074, -0.1278];
@@ -68,17 +69,19 @@ function escapeHtml(str: string): string {
 }
 
 function pointToLayer(feature: Feature, latlng: L.LatLng, style?: LayerStyle): L.Layer {
-  const color = style?.color ?? '#e6194b';
+  const meta = classifyWaypoint(feature.properties || {});
+  const markerColor = style?.color ?? '#3388ff';
+  const html = createWaypointMarkerHtml(meta.category, markerColor);
 
-  // Render a clean, crisp waypoint marker
-  return L.circleMarker(latlng, {
-    radius: 7,
-    fillColor: color,
-    color: '#ffffff',
-    weight: 2,
-    opacity: 1,
-    fillOpacity: 0.9,
+  const customIcon = L.divIcon({
+    html,
+    className: 'waypoint-pin-leaflet',
+    iconSize: [28, 36],
+    iconAnchor: [14, 34],
+    popupAnchor: [0, -32],
   });
+
+  return L.marker(latlng, { icon: customIcon });
 }
 
 function onEachFeature(feature: Feature, layer: LeafletLayer) {
