@@ -35,6 +35,14 @@ export interface SearchResult {
   importance: number;
 }
 
+/** Bounding box for viewport-restricted searches (SW corner → NE corner) */
+export interface SearchBounds {
+  minLon: number;
+  minLat: number;
+  maxLon: number;
+  maxLat: number;
+}
+
 // ─── Route Types ───────────────────────────────────────────────────
 
 export interface RouteWaypoint {
@@ -54,6 +62,10 @@ export interface RouteInfo {
 export type RouteProfile = 'driving' | 'walking' | 'cycling';
 
 export type ModalMode = 'add-geojson' | 'add-route' | 'search' | null;
+
+export type ViewTarget =
+  | { type: 'center'; center: [number, number]; zoom?: number }
+  | { type: 'bounds'; bounds: [[number, number], [number, number]]; padding?: [number, number] };
 
 export interface AppState {
   layers: MapLayer[];

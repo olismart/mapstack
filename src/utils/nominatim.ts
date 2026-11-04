@@ -1,12 +1,18 @@
-import type { SearchResult } from '../types';
+import type { SearchResult, SearchBounds } from '../types';
 
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
 
 /**
  * Search for places using the Nominatim API.
  * Accepts a free-form query string and returns top results.
+ *
+ * @param bounds  Optional bounding box to restrict results to the visible map area.
+ *                When provided, uses viewbox + bounded=1 to prioritise / limit results.
  */
-export async function searchPlaces(query: string): Promise<SearchResult[]> {
+export async function searchPlaces(
+  query: string,
+  bounds?: SearchBounds,
+): Promise<SearchResult[]> {
   if (!query.trim()) return [];
 
   const params = new URLSearchParams({
@@ -15,6 +21,13 @@ export async function searchPlaces(query: string): Promise<SearchResult[]> {
     limit: '10',
     addressdetails: '1',
   });
+
+  // Restrict results to the current map viewport when bounds are available
+  if (bounds) {
+    // Nominatim expects viewbox as: left,top,right,bottom (minLon,maxLat,maxLon,minLat)
+    params.set('viewbox', `${bounds.minLon},${bounds.maxLat},${bounds.maxLon},${bounds.minLat}`);
+    params.set('bounded', '1');
+  }
 
   const url = `${NOMINATIM_BASE}/search?${params}`;
 

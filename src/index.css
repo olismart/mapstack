@@ -384,3 +384,32 @@ html, body, #root {
 .profile-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;font-size:12px;font-weight:500;color:#667085;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
 .profile-btn:hover{background:#f9fafb;border-color:#98a2b3}
 .profile-btn.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}
+
+/* ─── Waypoint Popups ────────────────────────────────────────────── */
+.custom-map-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+}
+
+.custom-map-popup .leaflet-popup-content {
+  margin: 8px 12px;
+  line-height: 1.4;
+  min-width: 140px;
+  max-width: 260px;
+}
+
+.waypoint-popup-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.waypoint-popup-note {
+  font-size: 12px;
+  color: #475467;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+

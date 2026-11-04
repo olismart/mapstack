@@ -3,6 +3,7 @@ import type { GeoJSON } from 'geojson';
 import type { RouteProfile } from '../types';
 import { getRoute } from '../utils/osrm';
 import { searchPlaces } from '../utils/nominatim';
+import { parseGPX } from '../utils/gpx';
 
 interface RoutePlannerProps {
   onRouteCreated: (name: string, geojson: GeoJSON, distance: number, duration: number) => void;
@@ -37,11 +38,44 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<RouteProfile>('driving');
+  const [gpxError, setGpxError] = useState<string | null>(null);
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+  const gpxFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => timers.current.forEach((t) => clearTimeout(t));
   }, []);
+
+  function handleGPXUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    setGpxError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const MAX_SIZE = 25 * 1024 * 1024; // 25 MB
+    if (file.size > MAX_SIZE) {
+      setGpxError('GPX file exceeds 25 MB limit');
+      e.target.value = '';
+      return;
+    }
+
+    const defaultName = file.name.replace(/\.gpx$/i, '');
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = reader.result as string;
+        const result = parseGPX(text, defaultName);
+        onRouteCreated(result.name || defaultName, result.geojson, result.distance, result.duration);
+        onClose();
+      } catch (err: any) {
+        setGpxError(err.message || 'Failed to parse GPX file');
+      }
+    };
+    reader.onerror = () => {
+      setGpxError('Failed to read file');
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
 
   function search(index: number, query: string) {
     setWaypoints((prev) => {
@@ -155,11 +189,44 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
   const allConfirmed = waypoints.length >= 2 && waypoints.every((wp) => wp.confirmed);
 
   return (
-    <form onSubmit={handleSubmit}>
-      <p style={{ fontSize: 12, color: '#667085', marginBottom: 12 }}>
-        Type an address, city or point of interest for each stop. The route comes
-        from the public OSRM demo server.
-      </p>
+    <div>
+      <div style={{ marginBottom: 16, padding: 12, background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Import GPS Route (.gpx)</div>
+            <div style={{ fontSize: 11, color: '#64748b' }}>Upload routes or tracks from Garmin, Strava, etc.</div>
+          </div>
+          <div>
+            <input
+              ref={gpxFileInputRef}
+              type="file"
+              accept=".gpx,application/gpx+xml"
+              onChange={handleGPXUpload}
+              style={{ display: 'none' }}
+            />
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => gpxFileInputRef.current?.click()}
+            >
+              📂 Choose GPX File
+            </button>
+          </div>
+        </div>
+        {gpxError && <p style={{ fontSize: 12, color: '#d92d20', marginTop: 8, marginBottom: 0 }}>{gpxError}</p>}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 0', color: '#94a3b8', fontSize: 12 }}>
+        <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+        <span>OR PLAN ONLINE</span>
+        <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <p style={{ fontSize: 12, color: '#667085', marginBottom: 12 }}>
+          Type an address, city or point of interest for each stop. The route comes
+          from the public OSRM demo server.
+        </p>
 
       <div style={{ marginBottom: 16 }}>
         <label style={{ fontSize: 12, fontWeight: 600, color: '#344054', display: 'block', marginBottom: 6 }}>
@@ -236,5 +303,6 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
         </button>
       </div>
     </form>
+  </div>
   );
 }

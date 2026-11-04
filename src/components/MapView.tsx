@@ -1,5 +1,6 @@
 import { useEffect, useRef, useMemo } from 'react';
-import type { Map as LeafletMap } from 'leaflet';
+import type { Map as LeafletMap, Layer as LeafletLayer } from 'leaflet';
+import L from 'leaflet';
 import {
   MapContainer,
   TileLayer,
@@ -7,21 +8,30 @@ import {
   useMap,
   useMapEvents,
 } from 'react-leaflet';
-import type { GeoJSON as GeoJSONType } from 'geojson';
-import type { MapLayer, LayerStyle } from '../types';
+import type { GeoJSON as GeoJSONType, Feature } from 'geojson';
+import type { MapLayer, LayerStyle, ViewTarget } from '../types';
 
 // ─── Default map centre (London) ──────────────────────────────────
 const DEFAULT_CENTER: [number, number] = [51.5074, -0.1278];
 const DEFAULT_ZOOM = 10;
 
-// ─── Sub-component to handle fly-to ───────────────────────────────
-function FlyTo({ center, zoom }: { center?: [number, number]; zoom?: number }) {
+// ─── Sub-component to handle map viewport changes ─────────────────
+function MapViewportController({ target }: { target?: ViewTarget | null }) {
   const map = useMap();
   useEffect(() => {
-    if (center) {
-      map.flyTo(center, zoom ?? map.getZoom(), { duration: 1 });
+    if (!target) return;
+
+    if (target.type === 'bounds') {
+      map.fitBounds(target.bounds, {
+        padding: target.padding ?? [50, 50],
+        maxZoom: 16,
+        animate: true,
+        duration: 1,
+      });
+    } else if (target.type === 'center') {
+      map.flyTo(target.center, target.zoom ?? map.getZoom(), { duration: 1 });
     }
-  }, [center, zoom, map]);
+  }, [target, map]);
   return null;
 }
 
@@ -48,15 +58,59 @@ function makeStyle(style?: LayerStyle): any {
   };
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function pointToLayer(feature: Feature, latlng: L.LatLng, style?: LayerStyle): L.Layer {
+  const color = style?.color ?? '#e6194b';
+
+  // Render a clean, crisp waypoint marker
+  return L.circleMarker(latlng, {
+    radius: 7,
+    fillColor: color,
+    color: '#ffffff',
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.9,
+  });
+}
+
+function onEachFeature(feature: Feature, layer: LeafletLayer) {
+  const props = feature.properties;
+  if (!props) return;
+
+  const name = props.name || props.title || props.label || '';
+  const note = props.note || props.description || props.desc || props.cmt || '';
+
+  if (name || note) {
+    const escapedName = escapeHtml(String(name));
+    const escapedNote = escapeHtml(String(note));
+
+    const html = `
+      <div class="waypoint-popup">
+        ${escapedName ? `<div class="waypoint-popup-title">${escapedName}</div>` : ''}
+        ${escapedNote ? `<div class="waypoint-popup-note">${escapedNote}</div>` : ''}
+      </div>
+    `;
+    layer.bindPopup(html, { className: 'custom-map-popup' });
+  }
+}
+
 // ─── Props ────────────────────────────────────────────────────────
 interface MapViewProps {
   layers: MapLayer[];
-  flyTo?: { center: [number, number]; zoom?: number } | null;
+  viewTarget?: ViewTarget | null;
   onMapInit?: (map: LeafletMap) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────
-export default function MapView({ layers, flyTo, onMapInit }: MapViewProps) {
+export default function MapView({ layers, viewTarget, onMapInit }: MapViewProps) {
   // Create stable callback ref so we don't re-render the event handler
   const mapInitRef = useRef(onMapInit);
   mapInitRef.current = onMapInit;
@@ -84,13 +138,15 @@ export default function MapView({ layers, flyTo, onMapInit }: MapViewProps) {
           onMapReady={(map) => mapInitRef.current?.(map)}
         />
 
-        {flyTo && <FlyTo center={flyTo.center} zoom={flyTo.zoom} />}
+        <MapViewportController target={viewTarget} />
 
         {visibleLayers.map((layer) => (
           <GeoJSON
-            key={layer.id}
+            key={`${layer.id}-${layer.updatedAt}-${layer.style?.color ?? 'default'}`}
             data={layer.data!}
             style={makeStyle(layer.style)}
+            pointToLayer={(feature, latlng) => pointToLayer(feature, latlng, layer.style)}
+            onEachFeature={onEachFeature}
           />
         ))}
       </MapContainer>

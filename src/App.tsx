@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { GeoJSON } from 'geojson';
-import type { SearchResult, ModalMode, MapLayer } from './types';
+import type { SearchResult, ModalMode, MapLayer, SearchBounds, ViewTarget } from './types';
 import { useMapLayers } from './hooks/useMapLayers';
 import MapView from './components/MapView';
 import LayerPanel from './components/LayerPanel';
@@ -9,7 +9,9 @@ import SearchBox from './components/SearchBox';
 import GeoJSONUploader from './components/GeoJSONUploader';
 import RoutePlanner from './components/RoutePlanner';
 
-function getGeoJSONBounds(data: GeoJSON): { center: [number, number]; zoom: number } | null {
+export type LatLngBoundsLiteral = [[number, number], [number, number]];
+
+export function getGeoJSONBounds(data: GeoJSON): LatLngBoundsLiteral | null {
   let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
 
   function walkCoords(coords: any) {
@@ -35,18 +37,10 @@ function getGeoJSONBounds(data: GeoJSON): { center: [number, number]; zoom: numb
   else walkCoords(data.coordinates);
 
   if (minLat === Infinity) return null;
-  const center: [number, number] = [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
-  const span = Math.max(maxLat - minLat, maxLng - minLng);
-  let zoom = 13;
-  if (span > 5) zoom = 8;
-  else if (span > 1) zoom = 10;
-  else if (span > 0.2) zoom = 12;
-  else if (span > 0.05) zoom = 14;
-  else zoom = 16;
-  return { center, zoom };
+  return [[minLat, minLng], [maxLat, maxLng]];
 }
 
-function getCombinedBounds(layers: MapLayer[]): { center: [number, number]; zoom: number } | null {
+export function getCombinedBounds(layers: MapLayer[]): LatLngBoundsLiteral | null {
   let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
 
   function walkCoords(coords: any) {
@@ -75,15 +69,7 @@ function getCombinedBounds(layers: MapLayer[]): { center: [number, number]; zoom
   }
 
   if (minLat === Infinity) return null;
-  const center: [number, number] = [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
-  const span = Math.max(maxLat - minLat, maxLng - minLng);
-  let zoom = 13;
-  if (span > 5) zoom = 8;
-  else if (span > 1) zoom = 10;
-  else if (span > 0.2) zoom = 12;
-  else if (span > 0.05) zoom = 14;
-  else zoom = 16;
-  return { center, zoom };
+  return [[minLat, minLng], [maxLat, maxLng]];
 }
 export default function App() {
   const {
@@ -92,7 +78,7 @@ export default function App() {
   } = useMapLayers();
 
   const [modal, setModal] = useState<ModalMode>(null);
-  const [flyTo, setFlyTo] = useState<{ center: [number, number]; zoom?: number } | null>(null);
+  const [viewTarget, setViewTarget] = useState<ViewTarget | null>(null);
   const [map, setMap] = useState<LeafletMap | null>(null);
   const initializedRef = useRef(false);
 
@@ -103,7 +89,7 @@ export default function App() {
     if (visibleWithData.length === 0) return;
     const bounds = getCombinedBounds(visibleWithData);
     if (bounds) {
-      map.setView(bounds.center, bounds.zoom);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
     }
   }, [map, layers]);
 
@@ -118,24 +104,40 @@ export default function App() {
       pointFeature,
       { color: '#e6194b', fillColor: '#e6194b', fillOpacity: 0.4, weight: 2 },
     );
-    setFlyTo({ center: [result.lat, result.lon], zoom: 14 });
+    setViewTarget({ type: 'center', center: [result.lat, result.lon], zoom: 14 });
   }, [addLayerWithData]);
 
   const handleGeoJSONImport = useCallback((name: string, data: GeoJSON) => {
     addLayerWithData(name, data);
     const bounds = getGeoJSONBounds(data);
-    if (bounds) setFlyTo(bounds);
+    if (bounds) {
+      setViewTarget({ type: 'bounds', bounds, padding: [60, 60] });
+    }
   }, [addLayerWithData]);
 
   const handleRouteCreated = useCallback((name: string, geojson: GeoJSON, _d: number, _dur: number) => {
     addLayerWithData(name, geojson, { color: '#4363d8', weight: 5, opacity: 0.9, fillOpacity: 0 });
     const bounds = getGeoJSONBounds(geojson);
-    if (bounds) setFlyTo(bounds);
+    if (bounds) {
+      setViewTarget({ type: 'bounds', bounds, padding: [60, 60] });
+    }
   }, [addLayerWithData]);
 
   const handleColorChange = useCallback((id: string, color: string) => {
     updateLayerStyle(id, { color, fillColor: color });
   }, [updateLayerStyle]);
+
+  // Capture current map viewport for smart search scoping
+  const getBounds = useCallback((): SearchBounds | null => {
+    if (!map) return null;
+    const b = map.getBounds();
+    return {
+      minLon: b.getWest(),
+      minLat: b.getSouth(),
+      maxLon: b.getEast(),
+      maxLat: b.getNorth(),
+    };
+  }, [map]);
 
   function closeModal() { setModal(null); }
 
@@ -154,13 +156,13 @@ export default function App() {
         />
       </div>
 
-      <MapView layers={layers} flyTo={flyTo} onMapInit={(m) => setMap(m)} />
+      <MapView layers={layers} viewTarget={viewTarget} onMapInit={(m) => setMap(m)} />
 
       {modal === 'search' && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Search Places</h2>
-            <SearchBox onResultClick={handleSearchResult} onClose={closeModal} />
+            <SearchBox onResultClick={handleSearchResult} onClose={closeModal} getBounds={getBounds} />
           </div>
         </div>
       )}
@@ -168,7 +170,7 @@ export default function App() {
       {modal === 'add-geojson' && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Import GeoJSON</h2>
+            <h2>Import GeoJSON / GPX</h2>
             <GeoJSONUploader onImport={handleGeoJSONImport} onClose={closeModal} />
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { SearchResult } from '../types';
+import type { SearchResult, SearchBounds } from '../types';
 import { searchPlaces } from '../utils/nominatim';
 
 /**
@@ -10,8 +10,10 @@ export function useNominatim() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Capture bounds at the moment search is triggered so they don't go stale
+  const boundsRef = useRef<SearchBounds | undefined>(undefined);
 
-  const search = useCallback((query: string) => {
+  const search = useCallback((query: string, bounds?: SearchBounds) => {
     // Clear previous debounce timer
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -25,12 +27,15 @@ export function useNominatim() {
       return;
     }
 
+    // Snapshot bounds now — they'll be used when the debounced fetch fires
+    boundsRef.current = bounds;
+
     setLoading(true);
     setError(null);
 
     timerRef.current = setTimeout(async () => {
       try {
-        const data = await searchPlaces(trimmed);
+        const data = await searchPlaces(trimmed, boundsRef.current);
         setResults(data);
       } catch (err: any) {
         setError(err.message ?? 'Search failed');
