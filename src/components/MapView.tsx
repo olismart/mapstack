@@ -6,6 +6,8 @@ import {
   TileLayer,
   GeoJSON,
   ZoomControl,
+  Marker,
+  Popup,
   useMap,
   useMapEvents,
 } from 'react-leaflet';
@@ -106,15 +108,30 @@ function onEachFeature(feature: Feature, layer: LeafletLayer) {
   }
 }
 
+// ─── User location marker icon (borderless solid accent dot + subtle pulse halo) ─
+const userLocationIcon = L.divIcon({
+  className: 'user-location-marker-leaflet',
+  html: `
+    <div class="user-location-pin">
+      <div class="user-location-pulse"></div>
+      <div class="user-location-dot"></div>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12],
+});
+
 // ─── Props ────────────────────────────────────────────────────────
 interface MapViewProps {
   layers: MapLayer[];
   viewTarget?: ViewTarget | null;
+  userLocation?: [number, number] | null;
   onMapInit?: (map: LeafletMap) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────
-export default function MapView({ layers, viewTarget, onMapInit }: MapViewProps) {
+export default function MapView({ layers, viewTarget, userLocation, onMapInit }: MapViewProps) {
   // Create stable callback ref so we don't re-render the event handler
   const mapInitRef = useRef(onMapInit);
   mapInitRef.current = onMapInit;
@@ -144,6 +161,18 @@ export default function MapView({ layers, viewTarget, onMapInit }: MapViewProps)
         />
 
         <MapViewportController target={viewTarget} />
+
+        {/* Current user location marker (borderless to differentiate from waypoints) */}
+        {userLocation && (
+          <Marker position={userLocation} icon={userLocationIcon}>
+            <Popup className="custom-map-popup">
+              <div className="waypoint-popup">
+                <div className="waypoint-popup-title">Current Location</div>
+                <div className="waypoint-popup-note">You are here</div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
 
         {visibleLayers.map((layer) => (
           <GeoJSON

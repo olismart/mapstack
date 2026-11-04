@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { GeoJSON } from 'geojson';
-import { Search, Compass, UploadCloud, X } from 'lucide-react';
+import { Search, Compass, UploadCloud, X, LocateFixed } from 'lucide-react';
 import type { SearchResult, ModalMode, MapLayer, SearchBounds, ViewTarget } from './types';
 import { useMapLayers } from './hooks/useMapLayers';
+import { useUserLocation } from './hooks/useUserLocation';
 import MapView from './components/MapView';
 import LayerCards from './components/LayerCards';
 import SearchBox from './components/SearchBox';
@@ -74,15 +75,19 @@ export function getCombinedBounds(layers: MapLayer[]): LatLngBoundsLiteral | nul
 }
 export default function App() {
   const {
-    layers, addLayer, addLayerWithData, removeLayer, toggleLayer,
-    updateLayerStyle, renameLayer,
+    layers, addLayerWithData, removeLayer, toggleLayer,
+    renameLayer,
   } = useMapLayers();
+
+  const { coords: userCoords, loading: locatingUser, requestLocation } = useUserLocation();
 
   const [modal, setModal] = useState<ModalMode>(null);
   const [viewTarget, setViewTarget] = useState<ViewTarget | null>(null);
   const [map, setMap] = useState<LeafletMap | null>(null);
   const initializedRef = useRef(false);
+  const hasCenteredOnUserRef = useRef(false);
 
+  // Initial bounds setup for layers (if any exist)
   useEffect(() => {
     if (!map || initializedRef.current) return;
     initializedRef.current = true;
@@ -93,6 +98,27 @@ export default function App() {
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
     }
   }, [map, layers]);
+
+  // Center/scroll map to user location on initial load once obtained
+  useEffect(() => {
+    if (!userCoords || hasCenteredOnUserRef.current) return;
+    hasCenteredOnUserRef.current = true;
+    // If there are no existing layers shown, pan & zoom to the user's location
+    const visibleWithData = layers.filter((l) => l.visible && l.data !== null);
+    if (visibleWithData.length === 0) {
+      setViewTarget({ type: 'center', center: userCoords, zoom: 15 });
+    }
+  }, [userCoords, layers]);
+
+  const handleLocateClick = useCallback(() => {
+    if (userCoords) {
+      setViewTarget({ type: 'center', center: userCoords, zoom: 15 });
+    } else {
+      requestLocation((coords) => {
+        setViewTarget({ type: 'center', center: coords, zoom: 15 });
+      });
+    }
+  }, [userCoords, requestLocation]);
 
   const handleSearchResult = useCallback((result: SearchResult) => {
     const pointFeature: GeoJSON = {
@@ -149,7 +175,23 @@ export default function App() {
   return (
     <div className="app-layout">
       {/* Map view is full screen */}
-      <MapView layers={layers} viewTarget={viewTarget} onMapInit={(m) => setMap(m)} />
+      <MapView
+        layers={layers}
+        viewTarget={viewTarget}
+        userLocation={userCoords}
+        onMapInit={(m) => setMap(m)}
+      />
+
+      {/* Floating Locate Button below zoom controls */}
+      <button
+        type="button"
+        className={`locate-btn ${locatingUser ? 'locating' : ''}`}
+        onClick={handleLocateClick}
+        title={userCoords ? 'Zoom to your location' : 'Find your location'}
+        aria-label="Find my location"
+      >
+        <LocateFixed size={18} strokeWidth={2.2} />
+      </button>
 
       {/* Floating Bottom Dock (Layer cards + Actions) */}
       <div className="bottom-dock">

@@ -127,6 +127,42 @@ input, button, textarea, select {
   color: var(--accent) !important;
 }
 
+/* ─── Floating Locate Button (below zoom controls) ───────────────── */
+.locate-btn {
+  position: absolute;
+  top: calc(var(--screen-margin) + 76px);
+  right: var(--screen-margin);
+  z-index: 1000;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--panel-radius);
+  border: 1px solid var(--border);
+  background: var(--surface-translucent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.locate-btn:hover {
+  background: #f4f4f5;
+  color: var(--text-primary);
+}
+
+.locate-btn:active {
+  transform: scale(0.95);
+}
+
+.locate-btn.locating {
+  animation: locateSpin 1.4s linear infinite;
+  color: var(--text-primary);
+}
+
 /* ─── Floating Bottom Dock ───────────────────────────────────────── */
 .bottom-dock {
   position: absolute;
@@ -677,7 +713,64 @@ input, button, textarea, select {
   filter: blur(1px);
 }
 
+/* ─── User Location Marker (borderless solid accent dot + soft pulse) ─ */
+.user-location-marker-leaflet {
+  background: transparent !important;
+  border: none !important;
+}
+
+.user-location-pin {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-location-dot {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  border: none !important; /* Explicitly borderless to differentiate from waypoints */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.user-location-pulse {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  opacity: 0.25;
+  animation: userLocationPulse 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  z-index: 1;
+}
+
 /* ─── Keyframe Animations ────────────────────────────────────────── */
+@keyframes userLocationPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.45;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes locateSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
