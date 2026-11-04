@@ -1,0 +1,47 @@
+# Mapstack — Agent Guide
+
+## Overview
+A minimalist, mobile-first mapping web app with multi-layer GeoJSON and GPX route support.
+
+## Tech Stack
+- **Framework:** React 18 + TypeScript + Vite
+- **Mapping:** Leaflet + React-Leaflet
+- **Icons:** `lucide-react`
+- **Styling:** Pure custom CSS (`src/index.css`) — no Tailwind or external UI component libraries.
+
+## Design Principles
+- **Typography:** Google Font `Inconsolata` for all typography (body, inputs, buttons, popups, and dialogs).
+- **Color Palette:** Minimalist greyscale foundation + single interactive accent color (`#ff4d00` / `var(--accent)`).
+- **Buttons:**
+  - Primary: `.btn-primary` (solid accent fill, white text).
+  - Secondary: `.btn-secondary` (accent stroke and text, transparent fill, light accent hover tint).
+- **Layout:** Mobile-first, full-bleed map (`100vw` x `100vh`) with floating overlays:
+  - **Screen Margin:** Standardized `--screen-margin: 16px` from viewport edges.
+  - **Top-right:** Zoom controls with `--panel-radius: 20px`, no default Leaflet margins.
+  - **Bottom Dock:** Floating `.bottom-dock` containing:
+    1. Standalone layer cards stack (`.layer-card-stack`) floating directly above the controls.
+    2. 3-button action pill (`.bottom-action-bar`): `[Search]`, `[Route]`, `[Upload]`.
+  - **Layer Cards:** Squarer corners (`--card-radius: 6px`) to distinguish from rounded control pills.
+  - **Input Panels / Modals:** Mobile bottom-sheets (centered dialogs on desktop) with `--panel-radius: 20px`, transparent blur-only overlay (`backdrop-filter: blur(8px)`), and deep elevated shadow (`--shadow-input-panel`).
+
+## Layer & Routing Rules
+- **Color Allocation:** Layers automatically cycle through distinct high-contrast colors via `LAYER_PALETTE` in `src/hooks/useMapLayers.ts`.
+- **Card & Marker Sync:** Route path, waypoint pin markers, and layer card indicator dots synchronously share the layer's allocated color.
+- **Waypoints:** Classified from GPX metadata into Lucide teardrop pin markers (`Tent`, `Utensils`, `Beer`, `Bed`, `Castle`, etc.) with interactive popups displaying name and notes.
+- **Initial Load:** Start with an empty layer list (no route shown on fresh load).
+- **Viewport:** Zoom to fit the entire route/geometry within the viewport using `map.fitBounds(target.bounds, { padding: [60, 60] })`.
+
+## Key Architecture & Files
+- `src/App.tsx`: Main app layout, bottom dock, modal management, and viewport controllers.
+- `src/components/MapView.tsx`: Full-screen Leaflet map, custom waypoint pins, and map controllers.
+- `src/components/LayerCards.tsx`: Floating layer cards with visibility toggle, inline rename, and delete.
+- `src/components/RoutePlanner.tsx`: OSRM routing with driving, walking, and cycling travel profiles.
+- `src/components/GeoJSONUploader.tsx`: File importer accepting `.gpx`, `.geojson`, and `.json`.
+- `src/components/SearchBox.tsx`: OSM Nominatim place search scoped to current map bounds.
+- `src/utils/gpx.ts`: Zero-dependency native DOMParser converting GPX tracks/routes/waypoints into GeoJSON with distance and duration calculation.
+- `src/utils/waypointMarkers.ts`: Metadata classification and teardrop SVG marker generator with Lucide icons.
+- `src/hooks/useMapLayers.ts`: Layer state persisted in `localStorage` with non-overlapping color cycling.
+
+## Validation Commands
+- Build verification: `npm run build` (`tsc -b && vite build`)
+- Dev server: `npm run dev` (running on `http://localhost:5173/`)
