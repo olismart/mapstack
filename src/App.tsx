@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { GeoJSON } from 'geojson';
+import { Search, Compass, UploadCloud, X } from 'lucide-react';
 import type { SearchResult, ModalMode, MapLayer, SearchBounds, ViewTarget } from './types';
 import { useMapLayers } from './hooks/useMapLayers';
 import MapView from './components/MapView';
-import LayerPanel from './components/LayerPanel';
+import LayerCards from './components/LayerCards';
 import SearchBox from './components/SearchBox';
 import GeoJSONUploader from './components/GeoJSONUploader';
 import RoutePlanner from './components/RoutePlanner';
@@ -100,15 +101,15 @@ export default function App() {
       geometry: { type: 'Point', coordinates: [result.lon, result.lat] },
     };
     addLayerWithData(
-      result.displayName.length > 50 ? result.displayName.slice(0, 50) + '…' : result.displayName,
+      result.displayName.length > 40 ? result.displayName.slice(0, 40) + '…' : result.displayName,
       pointFeature,
-      { color: '#e6194b', fillColor: '#e6194b', fillOpacity: 0.4, weight: 2 },
+      { color: '#ff4d00', fillColor: '#ff4d00', fillOpacity: 0.25, weight: 2 },
     );
     setViewTarget({ type: 'center', center: [result.lat, result.lon], zoom: 14 });
   }, [addLayerWithData]);
 
   const handleGeoJSONImport = useCallback((name: string, data: GeoJSON) => {
-    addLayerWithData(name, data);
+    addLayerWithData(name, data, { color: '#ff4d00', weight: 4, opacity: 0.9, fillOpacity: 0.15 });
     const bounds = getGeoJSONBounds(data);
     if (bounds) {
       setViewTarget({ type: 'bounds', bounds, padding: [60, 60] });
@@ -116,16 +117,20 @@ export default function App() {
   }, [addLayerWithData]);
 
   const handleRouteCreated = useCallback((name: string, geojson: GeoJSON, _d: number, _dur: number) => {
-    addLayerWithData(name, geojson, { color: '#4363d8', weight: 5, opacity: 0.9, fillOpacity: 0 });
+    addLayerWithData(name, geojson, { color: '#ff4d00', weight: 4.5, opacity: 0.95, fillOpacity: 0 });
     const bounds = getGeoJSONBounds(geojson);
     if (bounds) {
       setViewTarget({ type: 'bounds', bounds, padding: [60, 60] });
     }
   }, [addLayerWithData]);
 
-  const handleColorChange = useCallback((id: string, color: string) => {
-    updateLayerStyle(id, { color, fillColor: color });
-  }, [updateLayerStyle]);
+  const handleFocusLayer = useCallback((layer: MapLayer) => {
+    if (!layer.data) return;
+    const bounds = getGeoJSONBounds(layer.data);
+    if (bounds) {
+      setViewTarget({ type: 'bounds', bounds, padding: [60, 60] });
+    }
+  }, []);
 
   // Capture current map viewport for smart search scoping
   const getBounds = useCallback((): SearchBounds | null => {
@@ -143,25 +148,58 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      <div className="sidebar">
-        <LayerPanel
+      {/* Map view is full screen */}
+      <MapView layers={layers} viewTarget={viewTarget} onMapInit={(m) => setMap(m)} />
+
+      {/* Floating Bottom Dock (Layer cards + Actions) */}
+      <div className="bottom-dock">
+        <LayerCards
           layers={layers}
           onToggle={toggleLayer}
           onRemove={removeLayer}
           onRename={renameLayer}
-          onColorChange={handleColorChange}
-          onOpenSearch={() => setModal('search')}
-          onOpenGeoJSON={() => setModal('add-geojson')}
-          onOpenRoute={() => setModal('add-route')}
+          onFocusLayer={handleFocusLayer}
         />
-      </div>
 
-      <MapView layers={layers} viewTarget={viewTarget} onMapInit={(m) => setMap(m)} />
+        <div className="bottom-action-bar">
+          <button
+            type="button"
+            className={`action-bar-btn ${modal === 'search' ? 'active' : ''}`}
+            onClick={() => setModal('search')}
+          >
+            <Search size={16} strokeWidth={2.2} />
+            <span>Search</span>
+          </button>
+
+          <button
+            type="button"
+            className={`action-bar-btn ${modal === 'add-route' ? 'active' : ''}`}
+            onClick={() => setModal('add-route')}
+          >
+            <Compass size={16} strokeWidth={2.2} />
+            <span>Route</span>
+          </button>
+
+          <button
+            type="button"
+            className={`action-bar-btn ${modal === 'add-geojson' ? 'active' : ''}`}
+            onClick={() => setModal('add-geojson')}
+          >
+            <UploadCloud size={16} strokeWidth={2.2} />
+            <span>Upload</span>
+          </button>
+        </div>
+      </div>
 
       {modal === 'search' && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Search Places</h2>
+            <div className="modal-header">
+              <h3>Search Places</h3>
+              <button type="button" className="modal-close-btn" onClick={closeModal} title="Close">
+                <X size={18} />
+              </button>
+            </div>
             <SearchBox onResultClick={handleSearchResult} onClose={closeModal} getBounds={getBounds} />
           </div>
         </div>
@@ -170,7 +208,12 @@ export default function App() {
       {modal === 'add-geojson' && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Import GeoJSON / GPX</h2>
+            <div className="modal-header">
+              <h3>Import GPX / GeoJSON</h3>
+              <button type="button" className="modal-close-btn" onClick={closeModal} title="Close">
+                <X size={18} />
+              </button>
+            </div>
             <GeoJSONUploader onImport={handleGeoJSONImport} onClose={closeModal} />
           </div>
         </div>
@@ -179,7 +222,12 @@ export default function App() {
       {modal === 'add-route' && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Plan Route</h2>
+            <div className="modal-header">
+              <h3>Plan Route</h3>
+              <button type="button" className="modal-close-btn" onClick={closeModal} title="Close">
+                <X size={18} />
+              </button>
+            </div>
             <RoutePlanner onRouteCreated={handleRouteCreated} onClose={closeModal} />
           </div>
         </div>

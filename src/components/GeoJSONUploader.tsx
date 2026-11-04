@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import type { GeoJSON } from 'geojson';
+import { Upload, FileCheck } from 'lucide-react';
 import { isGPXContent, parseGPX } from '../utils/gpx';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
@@ -11,11 +12,13 @@ interface GeoJSONUploaderProps {
 
 export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderProps) {
   const [name, setName] = useState('');
-  const [text, setText] = useState('');
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    setError(null);
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -25,10 +28,11 @@ export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderPr
       return;
     }
 
+    setSelectedFileName(file.name);
+
     const reader = new FileReader();
     reader.onload = () => {
-      setText(reader.result as string);
-      // Auto-name from file name
+      setFileContent(reader.result as string);
       if (!name) {
         setName(
           file.name
@@ -42,7 +46,6 @@ export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderPr
       setError('Failed to read file');
     };
     reader.readAsText(file);
-    // Reset so the same file can be re-selected
     e.target.value = '';
   }
 
@@ -50,16 +53,15 @@ export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderPr
     e.preventDefault();
     setError(null);
 
-    const trimmed = text.trim();
+    const trimmed = (fileContent || '').trim();
     if (!trimmed) {
-      setError('Paste GeoJSON/GPX or upload a file');
+      setError('Please choose a file to upload');
       return;
     }
 
-    // Check if the content is GPX
     if (isGPXContent(trimmed)) {
       try {
-        const parsed = parseGPX(trimmed, name || 'Imported GPX Layer');
+        const parsed = parseGPX(trimmed, name || selectedFileName || 'Imported GPX Layer');
         onImport(name || parsed.name, parsed.geojson);
         onClose();
         return;
@@ -69,7 +71,6 @@ export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderPr
       }
     }
 
-    // Otherwise parse as GeoJSON
     try {
       const parsed = JSON.parse(trimmed) as GeoJSON;
       if (
@@ -83,7 +84,7 @@ export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderPr
       ) {
         throw new Error('Invalid GeoJSON type');
       }
-      onImport(name || 'Imported Layer', parsed);
+      onImport(name || selectedFileName || 'Imported Layer', parsed);
       onClose();
     } catch (err: any) {
       setError(`Invalid GeoJSON/JSON: ${err.message}`);
@@ -98,35 +99,51 @@ export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderPr
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="My Layer"
         />
       </div>
 
       <div className="form-group">
-        <label>Upload File (.geojson, .json, .gpx)</label>
+        <label>File (.gpx, .geojson, .json)</label>
         <input
           ref={fileRef}
           type="file"
           accept=".geojson,.json,.gpx,application/json,application/gpx+xml"
           onChange={handleFile}
-          style={{ fontSize: 12 }}
+          style={{ display: 'none' }}
         />
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => fileRef.current?.click()}
+          style={{
+            width: '100%',
+            padding: '12px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+          }}
+        >
+          {selectedFileName ? (
+            <>
+              <FileCheck size={16} />
+              <span style={{ fontWeight: 600 }}>{selectedFileName}</span>
+            </>
+          ) : (
+            <>
+              <Upload size={16} />
+              <span style={{ fontWeight: 600 }}>Choose File</span>
+            </>
+          )}
+        </button>
       </div>
 
-      <div className="form-group">
-        <label>Or paste GeoJSON / GPX text</label>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder='{"type":"FeatureCollection","features":[...]} OR <?xml version="1.0"?><gpx>...'
-        />
-      </div>
-
-      {error && <p style={{ fontSize: 12, color: '#d92d20', marginBottom: 8 }}>{error}</p>}
+      {error && <p style={{ fontSize: 12, color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
       <div className="modal-actions">
-        <button type="button" className="btn" onClick={onClose}>Cancel</button>
-        <button type="submit" className="btn btn-primary">Import Layer</button>
+        <button type="submit" className="btn btn-primary" disabled={!fileContent}>
+          Import Layer
+        </button>
       </div>
     </form>
   );

@@ -5,6 +5,7 @@ import {
   MapContainer,
   TileLayer,
   GeoJSON,
+  ZoomControl,
   useMap,
   useMapEvents,
 } from 'react-leaflet';
@@ -70,7 +71,7 @@ function escapeHtml(str: string): string {
 
 function pointToLayer(feature: Feature, latlng: L.LatLng, style?: LayerStyle): L.Layer {
   const meta = classifyWaypoint(feature.properties || {});
-  const markerColor = style?.color ?? '#3388ff';
+  const markerColor = style?.color ?? '#ff4d00';
   const html = createWaypointMarkerHtml(meta.category, markerColor);
 
   const customIcon = L.divIcon({
@@ -128,10 +129,11 @@ export default function MapView({ layers, viewTarget, onMapInit }: MapViewProps)
       <MapContainer
         center={DEFAULT_CENTER}
         zoom={DEFAULT_ZOOM}
-        zoomControl={true}
+        zoomControl={false}
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%' }}
       >
+        <ZoomControl position="topright" />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

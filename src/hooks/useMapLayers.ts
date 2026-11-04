@@ -5,11 +5,11 @@ import { uid } from '../utils/id';
 import { useLocalStorage } from './useLocalStorage';
 
 const DEFAULT_STYLE: LayerStyle = {
-  color: '#3388ff',
-  weight: 3,
-  opacity: 0.8,
-  fillColor: '#3388ff',
-  fillOpacity: 0.2,
+  color: '#ff4d00',
+  weight: 4,
+  opacity: 0.9,
+  fillColor: '#ff4d00',
+  fillOpacity: 0.15,
 };
 
 /**
