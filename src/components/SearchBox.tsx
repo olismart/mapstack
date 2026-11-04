@@ -15,7 +15,10 @@ export default function SearchBox({ onResultClick, onClose, getBounds }: SearchB
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    // Only autofocus on larger screens so mobile keyboard doesn't instantly block view
+    if (window.innerWidth >= 640) {
+      inputRef.current?.focus();
+    }
   }, []);
 
   // Snapshot map bounds on every keystroke so results stay scoped to the viewport

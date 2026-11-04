@@ -50,13 +50,18 @@ export default function ModalDialog({ id, title, onClose, children }: ModalDialo
 
     document.addEventListener('keydown', handleKeyDown);
 
-    // Initial focus on the first input or focusable element
+    // Initial focus on the first input or focusable element (avoid aggressive mobile keyboard popups)
     const timer = setTimeout(() => {
       if (dialogRef.current) {
-        const initialFocus =
-          dialogRef.current.querySelector<HTMLElement>('input:not([type="hidden"]), button:not(.modal-close-btn)') ||
-          dialogRef.current.querySelector<HTMLElement>('button');
-        initialFocus?.focus();
+        // On touch / small screens, focusing input before animation finishes can obstruct view.
+        // We only autofocus if screen is desktop/tablet or not a virtual keyboard device.
+        const isMobileScreen = window.innerWidth < 640;
+        if (!isMobileScreen) {
+          const initialFocus =
+            dialogRef.current.querySelector<HTMLElement>('input:not([type="hidden"]), button:not(.modal-close-btn)') ||
+            dialogRef.current.querySelector<HTMLElement>('button');
+          initialFocus?.focus();
+        }
       }
     }, 50);
 

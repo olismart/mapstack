@@ -49,6 +49,8 @@
 
 html, body, #root {
   height: 100%;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
   width: 100%;
   font-family: var(--font-mono);
   font-size: var(--font-size-base);
@@ -85,7 +87,9 @@ div:focus:not(:focus-visible) {
 /* ─── Layout ────────────────────────────────────────────────────── */
 .app-layout {
   position: relative;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
   width: 100vw;
   overflow: hidden;
 }
@@ -190,7 +194,7 @@ div:focus:not(:focus-visible) {
 
 /* ─── Floating Bottom Dock ───────────────────────────────────────── */
 .bottom-dock {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -451,7 +455,7 @@ div:focus:not(:focus-visible) {
 }
 
 
-/* ─── Modals (Mobile-first bottom-sheet & dialog) ─────────────────── */
+/* ─── Modals (Mobile top-sheet & desktop dialog) ─────────────────── */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -462,10 +466,10 @@ div:focus:not(:focus-visible) {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
   z-index: 2000;
-  padding: 0 var(--screen-margin) calc(env(safe-area-inset-bottom, 0px) + var(--screen-margin));
+  padding: calc(env(safe-area-inset-top, 0px) + var(--screen-margin)) var(--screen-margin) var(--screen-margin);
   animation: fadeIn 0.15s ease-out;
 }
 
@@ -482,16 +486,19 @@ div:focus:not(:focus-visible) {
   padding: 22px;
   width: 100%;
   max-width: 520px;
-  max-height: calc(100vh - (var(--screen-margin) * 2));
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - (var(--screen-margin) * 2));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   box-shadow: var(--shadow-input-panel);
   border: 1px solid var(--border);
-  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (min-width: 640px) {
   .modal {
     border-radius: var(--panel-radius);
+    max-height: calc(100vh - (var(--screen-margin) * 2));
     box-shadow: var(--shadow-input-panel);
     animation: zoomIn 0.15s ease-out;
   }
@@ -587,8 +594,10 @@ div:focus:not(:focus-visible) {
 .search-results {
   list-style: none;
   margin-top: 6px;
-  max-height: 220px;
+  max-height: min(280px, 40vh);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -822,6 +831,11 @@ li:last-child .search-result-item,
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes zoomIn {
