@@ -37,41 +37,47 @@ export default function SearchBox({ onResultClick, onClose, getBounds }: SearchB
   return (
     <div>
       <div className="form-group">
+        <label htmlFor="search-places-input">Search query</label>
         <input
+          id="search-places-input"
           ref={inputRef}
           type="text"
           className="search-input"
           placeholder="Search places… (e.g. restaurants in view)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search places within viewport"
         />
       </div>
-      <p style={{ fontSize: 11, color: '#98a2b3', marginBottom: 12 }}>
+      <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)', marginBottom: 12 }}>
         {getBounds
           ? 'Results are scoped to the current map view.'
           : 'Search worldwide — pan & zoom to scope results.'}
       </p>
 
-      {loading && <p style={{ fontSize: 12, color: '#667085' }}>Searching…</p>}
-      {error && <p style={{ fontSize: 12, color: '#d92d20' }}>{error}</p>}
+      {loading && <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)' }}>Searching…</p>}
+      {error && <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--danger)' }}>{error}</p>}
 
       {results.length > 0 && (
-        <ul className="search-results">
+        <ul className="search-results" role="listbox" aria-label="Search suggestions">
           {results.map((r, i) => (
-            <li
-              key={i}
-              className="search-result-item"
-              onClick={() => handleSelect(r)}
-            >
-              {r.displayName}
-              <span className="result-type">{r.type}</span>
+            <li key={i} role="presentation">
+              <button
+                type="button"
+                role="option"
+                className="search-result-item"
+                onClick={() => handleSelect(r)}
+              >
+                <span>{r.displayName}</span>
+                <span className="result-type">{r.type}</span>
+              </button>
             </li>
           ))}
         </ul>
       )}
 
       {!loading && query.length >= 2 && results.length === 0 && !error && (
-        <p style={{ fontSize: 12, color: '#98a2b3', marginTop: 8 }}>
+        <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)', marginTop: 8 }}>
           No results found
         </p>
       )}

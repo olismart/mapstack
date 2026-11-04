@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { GeoJSON } from 'geojson';
-import { Search, Compass, UploadCloud, X, LocateFixed } from 'lucide-react';
+import { Search, Compass, UploadCloud, LocateFixed } from 'lucide-react';
 import type { SearchResult, ModalMode, MapLayer, SearchBounds, ViewTarget } from './types';
 import { useMapLayers } from './hooks/useMapLayers';
 import { useUserLocation } from './hooks/useUserLocation';
@@ -10,6 +10,7 @@ import LayerCards from './components/LayerCards';
 import SearchBox from './components/SearchBox';
 import GeoJSONUploader from './components/GeoJSONUploader';
 import RoutePlanner from './components/RoutePlanner';
+import ModalDialog from './components/ModalDialog';
 
 export type LatLngBoundsLiteral = [[number, number], [number, number]];
 
@@ -190,7 +191,7 @@ export default function App() {
         title={userCoords ? 'Zoom to your location' : 'Find your location'}
         aria-label="Find my location"
       >
-        <LocateFixed size={18} strokeWidth={2.2} />
+        <LocateFixed size={18} strokeWidth={2} />
       </button>
 
       {/* Floating Bottom Dock (Layer cards + Actions) */}
@@ -209,7 +210,7 @@ export default function App() {
             className={`action-bar-btn ${modal === 'search' ? 'active' : ''}`}
             onClick={() => setModal('search')}
           >
-            <Search size={16} strokeWidth={2.2} />
+            <Search size={18} strokeWidth={2} />
             <span>Search</span>
           </button>
 
@@ -218,7 +219,7 @@ export default function App() {
             className={`action-bar-btn ${modal === 'add-route' ? 'active' : ''}`}
             onClick={() => setModal('add-route')}
           >
-            <Compass size={16} strokeWidth={2.2} />
+            <Compass size={18} strokeWidth={2} />
             <span>Route</span>
           </button>
 
@@ -227,52 +228,28 @@ export default function App() {
             className={`action-bar-btn ${modal === 'add-geojson' ? 'active' : ''}`}
             onClick={() => setModal('add-geojson')}
           >
-            <UploadCloud size={16} strokeWidth={2.2} />
+            <UploadCloud size={18} strokeWidth={2} />
             <span>Upload</span>
           </button>
         </div>
       </div>
 
       {modal === 'search' && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Search Places</h3>
-              <button type="button" className="modal-close-btn" onClick={closeModal} title="Close">
-                <X size={18} />
-              </button>
-            </div>
-            <SearchBox onResultClick={handleSearchResult} onClose={closeModal} getBounds={getBounds} />
-          </div>
-        </div>
+        <ModalDialog id="search" title="Search Places" onClose={closeModal}>
+          <SearchBox onResultClick={handleSearchResult} onClose={closeModal} getBounds={getBounds} />
+        </ModalDialog>
       )}
 
       {modal === 'add-geojson' && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Import GPX / GeoJSON</h3>
-              <button type="button" className="modal-close-btn" onClick={closeModal} title="Close">
-                <X size={18} />
-              </button>
-            </div>
-            <GeoJSONUploader onImport={handleGeoJSONImport} onClose={closeModal} />
-          </div>
-        </div>
+        <ModalDialog id="upload" title="Import GPX / GeoJSON" onClose={closeModal}>
+          <GeoJSONUploader onImport={handleGeoJSONImport} onClose={closeModal} />
+        </ModalDialog>
       )}
 
       {modal === 'add-route' && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Plan Route</h3>
-              <button type="button" className="modal-close-btn" onClick={closeModal} title="Close">
-                <X size={18} />
-              </button>
-            </div>
-            <RoutePlanner onRouteCreated={handleRouteCreated} onClose={closeModal} />
-          </div>
-        </div>
+        <ModalDialog id="route" title="Plan Route" onClose={closeModal}>
+          <RoutePlanner onRouteCreated={handleRouteCreated} onClose={closeModal} />
+        </ModalDialog>
       )}
     </div>
   );

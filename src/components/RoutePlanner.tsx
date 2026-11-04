@@ -157,7 +157,7 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
   return (
     <form onSubmit={handleSubmit}>
       <div style={{ marginBottom: 16 }}>
-        <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+        <label style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>
           Travel mode
         </label>
         <div className="profile-toggle">
@@ -175,30 +175,42 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
       </div>
 
       {waypoints.map((wp, i) => (
-        <div key={i} style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 11, fontWeight: 600, minWidth: 42, paddingTop: 10, flexShrink: 0 }}>
+        <div key={i} style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <label
+              htmlFor={`route-stop-input-${i}`}
+              style={{ fontSize: 'var(--font-size-base)', fontWeight: 600, minWidth: 48, flexShrink: 0, cursor: 'pointer' }}
+            >
               {wp.label}
-            </span>
+            </label>
 
             <div style={{ flex: 1, position: 'relative' }}>
               <input
+                id={`route-stop-input-${i}`}
                 type="text"
                 className="search-input"
                 placeholder="Search address or place..."
                 value={wp.query}
                 onChange={(e) => search(i, e.target.value)}
-                style={{ paddingRight: 30, borderColor: wp.confirmed ? '#3cb44b' : undefined }}
+                aria-label={`Location for stop ${i + 1} (${wp.label})`}
+                style={{ paddingRight: 36, borderColor: wp.confirmed ? '#3cb44b' : undefined }}
               />
 
-              {wp.searching && <span style={{ position: 'absolute', right: 8, top: 8, fontSize: 12, color: '#98a2b3' }}>...</span>}
-              {wp.confirmed && <span style={{ position: 'absolute', right: 8, top: 8, fontSize: 12, color: '#3cb44b', fontWeight: 600 }}>OK</span>}
+              {wp.searching && <span style={{ position: 'absolute', right: 10, top: 10, fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)' }} aria-live="polite">...</span>}
+              {wp.confirmed && <span style={{ position: 'absolute', right: 10, top: 10, fontSize: 'var(--font-size-base)', color: '#3cb44b', fontWeight: 600 }} aria-label="Stop confirmed">OK</span>}
 
               {wp.results.length > 0 && !wp.confirmed && (
-                <ul className="search-results">
+                <ul className="search-results" role="listbox" aria-label={`Location suggestions for ${wp.label}`}>
                   {wp.results.map((r, ri) => (
-                    <li key={ri} className="search-result-item" onClick={() => pick(i, r)}>
-                      {r.displayName}
+                    <li key={ri} role="presentation">
+                      <button
+                        type="button"
+                        role="option"
+                        className="search-result-item"
+                        onClick={() => pick(i, r)}
+                      >
+                        {r.displayName}
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -206,23 +218,40 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
             </div>
 
             {wp.confirmed ? (
-              <button type="button" className="btn-icon" onClick={() => clearWp(i)} title="Change" style={{ marginTop: 4 }}>Edit</button>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => clearWp(i)}
+                title="Change stop location"
+                aria-label={`Change stop ${i + 1} (${wp.label}) location`}
+              >
+                Edit
+              </button>
             ) : waypoints.length > 2 ? (
-              <button type="button" className="btn-icon" onClick={() => removeStop(i)} title="Remove" style={{ marginTop: 4, color: '#d92d20' }}>X</button>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => removeStop(i)}
+                title="Remove stop"
+                aria-label={`Remove stop ${i + 1} (${wp.label})`}
+                style={{ color: '#d92d20' }}
+              >
+                X
+              </button>
             ) : null}
           </div>
 
           {wp.confirmed && (
-            <div style={{ fontSize: 11, color: '#98a2b3', marginLeft: 50, marginTop: 2 }}>
+            <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)', marginLeft: 56, marginTop: 4 }}>
               {wp.lat.toFixed(5)}, {wp.lon.toFixed(5)}
             </div>
           )}
         </div>
       ))}
 
-      <button type="button" className="btn btn-secondary btn-sm" onClick={addStop} style={{ marginBottom: 12 }}>+ Add stop</button>
+      <button type="button" className="btn btn-secondary btn-sm" onClick={addStop} style={{ marginBottom: 14 }}>+ Add stop</button>
 
-      {error && <p style={{ fontSize: 12, color: '#d92d20', marginBottom: 8 }}>{error}</p>}
+      {error && <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--danger)', marginBottom: 12 }}>{error}</p>}
 
       <div className="modal-actions">
         <button type="submit" className="btn btn-primary" disabled={loading || !allConfirmed}>

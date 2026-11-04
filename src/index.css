@@ -13,10 +13,16 @@
   --border-strong: #a1a1aa;
 
   --text-primary: #18181b;
-  --text-secondary: #71717a;
-  --text-muted: #a1a1aa;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
 
   --danger: #ef4444;
+
+  /* Typography scale (minimum 16px / 1em) */
+  --font-size-base: 16px;
+  --font-size-md: 18px;
+  --font-size-lg: 20px;
+  --font-size-xl: 22px;
 
   /* Consistent layout margins & radius tokens */
   --screen-margin: 16px;
@@ -45,16 +51,35 @@ html, body, #root {
   height: 100%;
   width: 100%;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   letter-spacing: -0.01em;
   color: var(--text-primary);
   background: #f4f4f5;
   overflow: hidden;
+}
+
+/* Allow text selection for readability and copy, prevent selection on dragging controls */
+.leaflet-container,
+.bottom-dock,
+.leaflet-control-zoom,
+.locate-btn {
   user-select: none;
 }
 
 input, button, textarea, select {
   font-family: inherit;
+}
+
+/* Focus visibility for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+div:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* ─── Layout ────────────────────────────────────────────────────── */
@@ -200,12 +225,12 @@ input, button, textarea, select {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: none;
   border-radius: calc(var(--panel-radius) - 6px);
   background: transparent;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: var(--font-size-base);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease-out;
@@ -281,7 +306,7 @@ input, button, textarea, select {
 }
 
 .layer-card-title {
-  font-size: 13px;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -299,7 +324,7 @@ input, button, textarea, select {
 .layer-rename-inline input {
   flex: 1;
   padding: 4px 8px;
-  font-size: 13px;
+  font-size: var(--font-size-base);
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   outline: none;
@@ -318,8 +343,8 @@ input, button, textarea, select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm);
   border: none;
   background: transparent;
@@ -347,12 +372,12 @@ input, button, textarea, select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 10px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  font-size: 13px;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;
@@ -406,8 +431,8 @@ input, button, textarea, select {
 }
 
 .btn-sm {
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 6px 12px;
+  font-size: var(--font-size-base);
 }
 
 .btn-icon {
@@ -417,7 +442,7 @@ input, button, textarea, select {
   color: var(--text-secondary);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: var(--font-size-base);
 }
 
 .btn-icon:hover {
@@ -482,7 +507,7 @@ input, button, textarea, select {
 }
 
 .modal-header h3 {
-  font-size: 15px;
+  font-size: var(--font-size-md);
   font-weight: 700;
   color: var(--text-primary);
   text-transform: uppercase;
@@ -524,22 +549,21 @@ input, button, textarea, select {
 
 .form-group label {
   display: block;
-  font-size: 11px;
+  font-size: var(--font-size-base);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .form-group input[type="text"],
 .form-group textarea,
 .search-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: var(--font-size-base);
   color: var(--text-primary);
   background: #ffffff;
   outline: none;
@@ -555,7 +579,7 @@ input, button, textarea, select {
 
 .form-group textarea {
   min-height: 90px;
-  font-size: 12px;
+  font-size: var(--font-size-base);
 }
 
 
@@ -572,21 +596,40 @@ input, button, textarea, select {
 }
 
 .search-result-item {
-  padding: 10px 12px;
-  font-size: 13px;
-  color: var(--text-primary);
-  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: transparent;
+  border: none;
   border-bottom: 1px solid var(--border);
-  transition: background 0.1s;
+  padding: 12px 14px;
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
 }
 
+li:last-child .search-result-item,
 .search-result-item:last-child {
   border-bottom: none;
 }
 
-.search-result-item:hover {
+.search-result-item:hover,
+.search-result-item:focus-visible {
   background: var(--accent-light);
   color: var(--accent);
+}
+
+.search-result-item .result-type {
+  font-size: var(--font-size-base);
+  opacity: 0.75;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 /* ─── Profile Toggle (Routing) ──────────────────────────────────── */
@@ -601,11 +644,11 @@ input, button, textarea, select {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   background: transparent;
-  font-size: 12px;
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--accent);
   cursor: pointer;
@@ -629,25 +672,25 @@ input, button, textarea, select {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   border: 1px solid var(--border);
   background: var(--surface);
-  padding: 4px;
+  padding: 6px;
 }
 
 .custom-map-popup .leaflet-popup-content {
-  margin: 8px 12px;
+  margin: 10px 14px;
   line-height: 1.45;
-  min-width: 150px;
-  max-width: 260px;
+  min-width: 170px;
+  max-width: 280px;
 }
 
 .waypoint-popup-title {
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--font-size-md);
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .waypoint-popup-note {
-  font-size: 12px;
+  font-size: var(--font-size-base);
   color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;

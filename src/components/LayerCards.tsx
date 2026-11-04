@@ -40,12 +40,24 @@ export default function LayerCards({
         <div
           key={layer.id}
           className={`layer-card ${!layer.visible ? 'layer-card-hidden' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`Layer: ${layer.name}. Click or press Enter to zoom to route`}
           onClick={() => onFocusLayer?.(layer)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              if (e.target === e.currentTarget) {
+                e.preventDefault();
+                onFocusLayer?.(layer);
+              }
+            }
+          }}
         >
           <div className="layer-card-main">
             <span
               className="layer-card-dot"
               style={{ backgroundColor: layer.style?.color ?? 'var(--accent)' }}
+              aria-hidden="true"
             />
 
             {editingId === layer.id ? (
@@ -63,14 +75,16 @@ export default function LayerCards({
                     if (e.key === 'Escape') setEditingId(null);
                   }}
                   autoFocus
+                  aria-label={`Edit name for layer ${layer.name}`}
                 />
                 <button
                   type="button"
                   className="layer-btn-icon"
                   onClick={() => commitRename(layer.id)}
                   title="Save name"
+                  aria-label={`Save name for layer ${layer.name}`}
                 >
-                  <Check size={14} />
+                  <Check size={18} strokeWidth={2} aria-hidden="true" />
                 </button>
               </div>
             ) : (
@@ -94,8 +108,9 @@ export default function LayerCards({
                 className="layer-btn-icon"
                 onClick={() => startRename(layer)}
                 title="Rename"
+                aria-label={`Rename layer ${layer.name}`}
               >
-                <Edit2 size={13} />
+                <Edit2 size={18} strokeWidth={2} aria-hidden="true" />
               </button>
             )}
 
@@ -104,8 +119,13 @@ export default function LayerCards({
               className={`layer-btn-icon ${!layer.visible ? 'layer-btn-muted' : ''}`}
               onClick={() => onToggle(layer.id)}
               title={layer.visible ? 'Hide on map' : 'Show on map'}
+              aria-label={layer.visible ? `Hide layer ${layer.name}` : `Show layer ${layer.name}`}
             >
-              {layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}
+              {layer.visible ? (
+                <Eye size={18} strokeWidth={2} aria-hidden="true" />
+              ) : (
+                <EyeOff size={18} strokeWidth={2} aria-hidden="true" />
+              )}
             </button>
 
             <button
@@ -113,8 +133,9 @@ export default function LayerCards({
               className="layer-btn-icon layer-btn-danger"
               onClick={() => onRemove(layer.id)}
               title="Delete layer"
+              aria-label={`Delete layer ${layer.name}`}
             >
-              <Trash2 size={14} />
+              <Trash2 size={18} strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
         </div>
