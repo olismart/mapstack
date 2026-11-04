@@ -4,6 +4,26 @@ import type { MapLayer, LayerStyle } from '../types';
 import { uid } from '../utils/id';
 import { useLocalStorage } from './useLocalStorage';
 
+export const LAYER_PALETTE = [
+  '#ff4d00', // International Orange
+  '#2563eb', // Royal Cobalt Blue
+  '#059669', // Emerald Green
+  '#7c3aed', // Purple
+  '#db2777', // Magenta Pink
+  '#d97706', // Amber Gold
+  '#0891b2', // Teal / Cyan
+  '#4f46e5', // Indigo
+];
+
+function getNextLayerColor(existingLayers: MapLayer[]): string {
+  const usedColors = new Set(
+    existingLayers.map((l) => l.style?.color).filter(Boolean) as string[],
+  );
+  const available = LAYER_PALETTE.find((c) => !usedColors.has(c));
+  if (available) return available;
+  return LAYER_PALETTE[existingLayers.length % LAYER_PALETTE.length];
+}
+
 const DEFAULT_STYLE: LayerStyle = {
   color: '#ff4d00',
   weight: 4,
@@ -22,16 +42,25 @@ export function useMapLayers() {
   /** Add an empty/new layer with a given name */
   const addLayer = useCallback(
     (name: string) => {
-      const layer: MapLayer = {
-        id: uid(),
-        name,
-        visible: true,
-        data: null,
-        style: { ...DEFAULT_STYLE },
-        updatedAt: Date.now(),
-      };
-      setLayers((prev) => [...prev, layer]);
-      return layer;
+      let createdLayer: MapLayer | null = null;
+      setLayers((prev) => {
+        const nextColor = getNextLayerColor(prev);
+        const layer: MapLayer = {
+          id: uid(),
+          name,
+          visible: true,
+          data: null,
+          style: {
+            ...DEFAULT_STYLE,
+            color: nextColor,
+            fillColor: nextColor,
+          },
+          updatedAt: Date.now(),
+        };
+        createdLayer = layer;
+        return [...prev, layer];
+      });
+      return createdLayer;
     },
     [setLayers],
   );
@@ -39,16 +68,28 @@ export function useMapLayers() {
   /** Add a layer with data already populated */
   const addLayerWithData = useCallback(
     (name: string, data: GeoJSON, style?: LayerStyle) => {
-      const layer: MapLayer = {
-        id: uid(),
-        name,
-        visible: true,
-        data,
-        style: style ?? { ...DEFAULT_STYLE },
-        updatedAt: Date.now(),
-      };
-      setLayers((prev) => [...prev, layer]);
-      return layer;
+      let createdLayer: MapLayer | null = null;
+      setLayers((prev) => {
+        const nextColor = getNextLayerColor(prev);
+        const resolvedColor = style?.color ?? nextColor;
+        const resolvedStyle: LayerStyle = {
+          ...DEFAULT_STYLE,
+          fillColor: resolvedColor,
+          ...style,
+          color: resolvedColor,
+        };
+        const layer: MapLayer = {
+          id: uid(),
+          name,
+          visible: true,
+          data,
+          style: resolvedStyle,
+          updatedAt: Date.now(),
+        };
+        createdLayer = layer;
+        return [...prev, layer];
+      });
+      return createdLayer;
     },
     [setLayers],
   );

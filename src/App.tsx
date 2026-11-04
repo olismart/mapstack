@@ -103,13 +103,13 @@ export default function App() {
     addLayerWithData(
       result.displayName.length > 40 ? result.displayName.slice(0, 40) + '…' : result.displayName,
       pointFeature,
-      { color: '#ff4d00', fillColor: '#ff4d00', fillOpacity: 0.25, weight: 2 },
+      { fillOpacity: 0.25, weight: 2 },
     );
     setViewTarget({ type: 'center', center: [result.lat, result.lon], zoom: 14 });
   }, [addLayerWithData]);
 
   const handleGeoJSONImport = useCallback((name: string, data: GeoJSON) => {
-    addLayerWithData(name, data, { color: '#ff4d00', weight: 4, opacity: 0.9, fillOpacity: 0.15 });
+    addLayerWithData(name, data, { weight: 4, opacity: 0.9, fillOpacity: 0.15 });
     const bounds = getGeoJSONBounds(data);
     if (bounds) {
       setViewTarget({ type: 'bounds', bounds, padding: [60, 60] });
@@ -117,7 +117,7 @@ export default function App() {
   }, [addLayerWithData]);
 
   const handleRouteCreated = useCallback((name: string, geojson: GeoJSON, _d: number, _dur: number) => {
-    addLayerWithData(name, geojson, { color: '#ff4d00', weight: 4.5, opacity: 0.95, fillOpacity: 0 });
+    addLayerWithData(name, geojson, { weight: 4.5, opacity: 0.95, fillOpacity: 0 });
     const bounds = getGeoJSONBounds(geojson);
     if (bounds) {
       setViewTarget({ type: 'bounds', bounds, padding: [60, 60] });

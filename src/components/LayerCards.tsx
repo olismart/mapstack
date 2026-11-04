@@ -43,7 +43,10 @@ export default function LayerCards({
           onClick={() => onFocusLayer?.(layer)}
         >
           <div className="layer-card-main">
-            <span className="layer-card-dot" />
+            <span
+              className="layer-card-dot"
+              style={{ backgroundColor: layer.style?.color ?? 'var(--accent)' }}
+            />
 
             {editingId === layer.id ? (
               <div
