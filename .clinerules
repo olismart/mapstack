@@ -1,13 +1,15 @@
 # Mapstack — Agent Guide
 
 ## Overview
-A minimalist, mobile-first mapping web app with multi-layer GeoJSON and GPX route support.
+A minimalist, mobile-first mapping web app with multi-layer GeoJSON, GPX, and Komoot Tour link import support.
 
 ## Tech Stack
 - **Framework:** React 18 + TypeScript + Vite
 - **Mapping:** Leaflet + React-Leaflet
 - **Icons:** `lucide-react` (standardized to `18px`, `strokeWidth={2}`)
 - **Styling:** Pure custom CSS (`src/index.css`) — no Tailwind or external UI component libraries.
+- **Server / API:** Node HTTP middleware registered in `vite.config.ts` for development/preview, with a serverless adapter in `api/`.
+- **Testing:** Node's built-in `node:test` runner with Vite `ssrLoadModule` for TypeScript modules; no separate test framework.
 - **SSL / Mobile Dev:** `@vitejs/plugin-basic-ssl` providing HTTPS for mobile geolocation testing.
 
 ## Design Principles
@@ -18,7 +20,8 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON and GPX rout
 - **Icons:** Normalized to `18px` with `strokeWidth={2}` across controls, buttons, dialogs, and cards. Use `currentColor` / greyscale for neutral actions, white on solid accent buttons.
 - **Buttons:**
   - Primary: `.btn-primary` (solid accent fill, white text).
-  - Secondary: `.btn-secondary` (accent stroke and text, transparent fill, light accent hover tint). Used for upload trigger, add stop, and unselected travel modes.
+  - Secondary: `.btn-secondary` (accent stroke and text, transparent fill, light accent hover tint). Used for the file chooser and add stop.
+  - Toggle choices: `.profile-btn` with `.active` for the selected option. Inactive choices use accent stroke/text; the active choice uses a solid accent fill with white text. Shared by travel modes and import source choices.
 - **Control Height:** All inputs and buttons share `--control-height: 44px` so inline controls align vertically (`.search-input`, `.btn`, `.btn-sm`, `.btn-icon`, `.btn-icon-only`, `.wp-locate-btn`, `.profile-btn`).
 - **No Emoji in UI:** Use `lucide-react` icons rather than emoji glyphs in new UI text/labels.
 - **Layout & Viewport:** Mobile-first, full-bleed map (`100vw` x `100dvh` with `-webkit-fill-available` fallback):
@@ -26,7 +29,8 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON and GPX rout
   - **Top-right:** Zoom controls (`--panel-radius: 20px`, `margin: 0 !important`) with floating locate button (`.locate-btn`) directly underneath in neutral monochrome.
   - **Bottom Dock:** Fixed `.bottom-dock` (`position: fixed`) floating above mobile browser toolbars with `env(safe-area-inset-bottom)` offsets containing:
     1. Standalone layer cards stack (`.layer-card-stack`) floating directly above the controls.
-    2. 3-button action pill (`.bottom-action-bar`): `[Search]`, `[Route]`, `[Upload]`.
+    2. 3-button action pill (`.bottom-action-bar`): `[Search]`, `[New Route]`, `[Import]`.
+  - **Action & Modal Naming:** Each dialog title exactly matches its bottom-bar action: `Search`, `New Route`, and `Import`.
   - **Layer Cards:** Squarer corners (`--card-radius: 6px`) to distinguish from rounded control pills.
   - **Input Panels / Modals:** Top-docked on mobile (`align-items: flex-start; padding-top: calc(env(safe-area-inset-top, 0px) + var(--screen-margin))`) to avoid virtual keyboard occlusion, centered dialogs on desktop (`min-width: 640px`). Transparent blur-only backdrop (`backdrop-filter: blur(8px)`), elevated shadow (`--shadow-input-panel`), and touch overscroll containment.
 
@@ -54,20 +58,39 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON and GPX rout
 - **Search pick:** Selecting a place suggestion must NOT overwrite the stop’s role `label` (the address lives in the input `query`).
 - **Layer naming:** Auto-generated route layer names are plain text with no emoji: `Profile (X.X km, Y min)`, e.g. `Cycling (12.4 km, 45 min)`.
 
+## Route Import Conventions
+- **Sources:** `RouteImporter.tsx` defaults to `Komoot link`, with `File upload` as the GPX/GeoJSON fallback. Source toggles reuse `.profile-btn` / `.active` and have no icons.
+- **Confirmation:** Both import flows use an icon-free primary button labelled exactly `Import route`; the Komoot loading label is `Importing…`.
+- **Komoot links:** Accept Komoot Tour share links and optional `share_token` values. Never request or store Komoot credentials. Validate the hostname/path, discard tracking parameters, and do not log share URLs or tokens.
+- **API flow:** The browser posts to `/api/komoot/import`. The server requests GPX first, then falls back on `401` / `403` to public embedded coordinates and generates GPX with the Tour name, coordinates, and available elevation. The browser still uses `parseGPX()` and the shared layer-import callback.
+- **Server safety:** Keep upstream Komoot URLs constructed from validated Tour IDs; do not turn the endpoint into a generic URL proxy. Preserve request/response limits, timeouts, and rate limiting.
+- **Deployment:** Vite middleware handles local development and preview. Production hosting must support the Node serverless adapter in `api/komoot/import.ts`; a static-only host is insufficient for Komoot imports.
+- **Upstream stability:** Komoot's app endpoints are undocumented and can change. Keep their handling isolated in `server/komootImport.ts` and retain manual file upload as a fallback.
+
 ## Key Architecture & Files
 - `src/App.tsx`: Main app layout, bottom dock, modal management, user location controls, and viewport controllers.
 - `src/components/MapView.tsx`: Full-screen Leaflet map, custom waypoint pins, borderless location marker, tile resize handler, and map controllers.
 - `src/components/ModalDialog.tsx`: Accessible dialog wrapper with focus trap, aria attributes, and keyboard handling.
 - `src/components/LayerCards.tsx`: Floating layer cards with visibility toggle, inline rename, delete, and keyboard activation.
 - `src/components/RoutePlanner.tsx`: OSRM routing with driving, walking, and cycling travel profiles.
+- `src/components/RouteImporter.tsx`: Komoot/file source selection and shared import callback wiring.
+- `src/components/KomootImporter.tsx`: Komoot share-link form, request cancellation, GPX parsing, and import error display.
 - `src/components/GeoJSONUploader.tsx`: File importer accepting `.gpx`, `.geojson`, and `.json`.
 - `src/components/SearchBox.tsx`: OSM Nominatim place search scoped to current map bounds with keyboard-navigable listbox.
+- `src/utils/komoot.ts`: Komoot URL validation, Tour ID extraction, and share-token handling.
 - `src/utils/gpx.ts`: Zero-dependency native DOMParser converting GPX tracks/routes/waypoints into GeoJSON with distance and duration calculation.
 - `src/utils/waypointMarkers.ts`: Metadata classification and teardrop SVG marker generator with Lucide icons.
+- `server/komootImport.ts`: Validated Komoot proxy, GPX retrieval, public-coordinate fallback, and generated GPX response.
+- `server/rateLimit.ts`: Best-effort in-memory Komoot import rate limiting.
+- `api/komoot/import.ts`: Production serverless adapter for the Komoot import handler.
+- `vite.config.ts`: React, HTTPS, and Komoot middleware configuration for development and preview.
 - `src/hooks/useMapLayers.ts`: Layer state persisted in `localStorage` with non-overlapping color cycling.
 - `src/hooks/useUserLocation.ts`: Live GPS location tracking with permission handling and continuous watching.
+- `tests/komoot.test.mjs`: Node tests for URL validation, GPX imports, coordinate fallback, and error handling.
 
 ## Validation Commands
+- Automated tests: `npm test` (Node test runner; includes Komoot URL, API, fallback, and error-handling coverage)
 - Build verification: `npm run build` (`tsc -b && vite build`)
 - Dev server: `npm run dev` (running on `https://localhost:5173/` / `https://192.168.x.x:5173/` with local SSL)
+- Production preview: `npm run preview` (includes the Komoot middleware after `npm run build`)
 

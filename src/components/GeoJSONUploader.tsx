@@ -159,7 +159,7 @@ export default function GeoJSONUploader({ onImport, onClose }: GeoJSONUploaderPr
 
       <div className="modal-actions">
         <button type="submit" className="btn btn-primary" disabled={!fileContent}>
-          Import Layer
+          Import route
         </button>
       </div>
     </form>

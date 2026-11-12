@@ -220,7 +220,7 @@ export default function App() {
             onClick={() => setModal('add-route')}
           >
             <Compass size={18} strokeWidth={2} />
-            <span>Route</span>
+            <span>New Route</span>
           </button>
 
           <button
@@ -229,25 +229,25 @@ export default function App() {
             onClick={() => setModal('add-geojson')}
           >
             <UploadCloud size={18} strokeWidth={2} />
-            <span>Upload</span>
+            <span>Import</span>
           </button>
         </div>
       </div>
 
       {modal === 'search' && (
-        <ModalDialog id="search" title="Search Places" onClose={closeModal}>
+        <ModalDialog id="search" title="Search" onClose={closeModal}>
           <SearchBox onResultClick={handleSearchResult} onClose={closeModal} getBounds={getBounds} />
         </ModalDialog>
       )}
 
       {modal === 'add-geojson' && (
-        <ModalDialog id="upload" title="Import Route" onClose={closeModal}>
+        <ModalDialog id="upload" title="Import" onClose={closeModal}>
           <RouteImporter onImport={handleGeoJSONImport} onClose={closeModal} />
         </ModalDialog>
       )}
 
       {modal === 'add-route' && (
-        <ModalDialog id="route" title="Plan Route" onClose={closeModal}>
+        <ModalDialog id="route" title="New Route" onClose={closeModal}>
           <RoutePlanner
             onRouteCreated={handleRouteCreated}
             onClose={closeModal}

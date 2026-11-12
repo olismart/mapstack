@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GeoJSON } from 'geojson';
-import { Link2 } from 'lucide-react';
 import { isGPXContent, parseGPX } from '../utils/gpx';
 import { parseKomootTourUrl } from '../utils/komoot';
 
@@ -109,8 +108,7 @@ export default function KomootImporter({ onImport, onClose }: KomootImporterProp
 
       <div className="modal-actions">
         <button type="submit" className="btn btn-primary" disabled={loading || !url.trim()}>
-          <Link2 size={18} strokeWidth={2} aria-hidden="true" />
-          {loading ? 'Importing…' : 'Import Route'}
+          {loading ? 'Importing…' : 'Import route'}
         </button>
       </div>
     </form>

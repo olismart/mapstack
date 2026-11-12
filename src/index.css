@@ -258,7 +258,7 @@ div:focus:not(:focus-visible) {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 14px;
+  padding: 10px 8px;
   border: none;
   border-radius: calc(var(--panel-radius) - 6px);
   background: transparent;

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { GeoJSON } from 'geojson';
-import { Link2, Upload } from 'lucide-react';
 import GeoJSONUploader from './GeoJSONUploader';
 import KomootImporter from './KomootImporter';
 
@@ -19,20 +18,18 @@ export default function RouteImporter({ onImport, onClose }: RouteImporterProps)
       <div className="import-source-switch" role="group" aria-label="Route import source">
         <button
           type="button"
-          className={`btn import-source-btn ${source === 'komoot' ? 'btn-secondary' : ''}`}
+          className={`profile-btn import-source-btn${source === 'komoot' ? ' active' : ''}`}
           aria-pressed={source === 'komoot'}
           onClick={() => setSource('komoot')}
         >
-          <Link2 size={18} strokeWidth={2} aria-hidden="true" />
           Komoot link
         </button>
         <button
           type="button"
-          className={`btn import-source-btn ${source === 'file' ? 'btn-secondary' : ''}`}
+          className={`profile-btn import-source-btn${source === 'file' ? ' active' : ''}`}
           aria-pressed={source === 'file'}
           onClick={() => setSource('file')}
         >
-          <Upload size={18} strokeWidth={2} aria-hidden="true" />
           File upload
         </button>
       </div>
