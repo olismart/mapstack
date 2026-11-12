@@ -6,42 +6,68 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON and GPX rout
 ## Tech Stack
 - **Framework:** React 18 + TypeScript + Vite
 - **Mapping:** Leaflet + React-Leaflet
-- **Icons:** `lucide-react`
+- **Icons:** `lucide-react` (standardized to `18px`, `strokeWidth={2}`)
 - **Styling:** Pure custom CSS (`src/index.css`) — no Tailwind or external UI component libraries.
+- **SSL / Mobile Dev:** `@vitejs/plugin-basic-ssl` providing HTTPS for mobile geolocation testing.
 
 ## Design Principles
 - **Typography:** Google Font `Inconsolata` for all typography (body, inputs, buttons, popups, and dialogs).
+  - Minimum text size: **16px (1em)** (`--font-size-base`) across all UI elements, inputs, and buttons to avoid mobile iOS Safari auto-zoom on input focus.
+  - Secondary size: **18px** (`--font-size-md`) for headers and popup titles.
 - **Color Palette:** Minimalist greyscale foundation + single interactive accent color (`#ff4d00` / `var(--accent)`).
+- **Icons:** Normalized to `18px` with `strokeWidth={2}` across controls, buttons, dialogs, and cards. Use `currentColor` / greyscale for neutral actions, white on solid accent buttons.
 - **Buttons:**
   - Primary: `.btn-primary` (solid accent fill, white text).
-  - Secondary: `.btn-secondary` (accent stroke and text, transparent fill, light accent hover tint).
-- **Layout:** Mobile-first, full-bleed map (`100vw` x `100vh`) with floating overlays:
+  - Secondary: `.btn-secondary` (accent stroke and text, transparent fill, light accent hover tint). Used for upload trigger, add stop, and unselected travel modes.
+- **Control Height:** All inputs and buttons share `--control-height: 44px` so inline controls align vertically (`.search-input`, `.btn`, `.btn-sm`, `.btn-icon`, `.btn-icon-only`, `.wp-locate-btn`, `.profile-btn`).
+- **No Emoji in UI:** Use `lucide-react` icons rather than emoji glyphs in new UI text/labels.
+- **Layout & Viewport:** Mobile-first, full-bleed map (`100vw` x `100dvh` with `-webkit-fill-available` fallback):
   - **Screen Margin:** Standardized `--screen-margin: 16px` from viewport edges.
-  - **Top-right:** Zoom controls with `--panel-radius: 20px`, no default Leaflet margins.
-  - **Bottom Dock:** Floating `.bottom-dock` containing:
+  - **Top-right:** Zoom controls (`--panel-radius: 20px`, `margin: 0 !important`) with floating locate button (`.locate-btn`) directly underneath in neutral monochrome.
+  - **Bottom Dock:** Fixed `.bottom-dock` (`position: fixed`) floating above mobile browser toolbars with `env(safe-area-inset-bottom)` offsets containing:
     1. Standalone layer cards stack (`.layer-card-stack`) floating directly above the controls.
     2. 3-button action pill (`.bottom-action-bar`): `[Search]`, `[Route]`, `[Upload]`.
   - **Layer Cards:** Squarer corners (`--card-radius: 6px`) to distinguish from rounded control pills.
-  - **Input Panels / Modals:** Mobile bottom-sheets (centered dialogs on desktop) with `--panel-radius: 20px`, transparent blur-only overlay (`backdrop-filter: blur(8px)`), and deep elevated shadow (`--shadow-input-panel`).
+  - **Input Panels / Modals:** Top-docked on mobile (`align-items: flex-start; padding-top: calc(env(safe-area-inset-top, 0px) + var(--screen-margin))`) to avoid virtual keyboard occlusion, centered dialogs on desktop (`min-width: 640px`). Transparent blur-only backdrop (`backdrop-filter: blur(8px)`), elevated shadow (`--shadow-input-panel`), and touch overscroll containment.
 
-## Layer & Routing Rules
+## Accessibility (A11y) Standards
+- **Form Controls:** Every input must be programmatically associated with a label via `htmlFor` / `id` or an explicit `aria-label` (route stop inputs use `aria-label` since their visible labels were removed for full-width layout).
+- **Dialogs:** All modals use `ModalDialog.tsx` with `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, focus trapping, focus restoration, and Escape key dismissal.
+- **Accessible Names:** All icon-only buttons must provide explicit `aria-label` attributes.
+- **Keyboard Navigation:** Autocomplete suggestions use `<button role="option">` inside `<ul role="listbox">`. Layer cards have `role="button"`, `tabIndex={0}`, and activate via Enter / Space.
+- **Focus Indicators:** Global `:focus-visible` outline (`2px solid var(--accent); outline-offset: 2px`).
+- **Text Selection:** `user-select: none` is restricted only to draggable map controls and toolbars, leaving body text selectable.
+
+## Map, Layer & Geolocation Rules
 - **Color Allocation:** Layers automatically cycle through distinct high-contrast colors via `LAYER_PALETTE` in `src/hooks/useMapLayers.ts`.
 - **Card & Marker Sync:** Route path, waypoint pin markers, and layer card indicator dots synchronously share the layer's allocated color.
 - **Waypoints:** Classified from GPX metadata into Lucide teardrop pin markers (`Tent`, `Utensils`, `Beer`, `Bed`, `Castle`, etc.) with interactive popups displaying name and notes.
-- **Initial Load:** Start with an empty layer list (no route shown on fresh load).
+- **User Location:** Live GPS tracked via `useUserLocation.ts`. Displayed as a **borderless** solid accent dot (`.user-location-dot`) with pulse animation to distinguish from bordered waypoint pins.
+- **Initial Load:** Start with an empty layer list. On initial load, auto-centers and zooms to user location if no route layers are present.
+- **Tile Sizing & Invalidation:** `MapView.tsx` includes `MapResizeHandler` (`ResizeObserver` + delayed `invalidateSize()`) and `<TileLayer keepBuffer={4} />` to prevent blank/unrendered tile strips on mobile viewport changes.
 - **Viewport:** Zoom to fit the entire route/geometry within the viewport using `map.fitBounds(target.bounds, { padding: [60, 60] })`.
 
+## Route Planner Conventions
+- **Travel Modes:** Order is Cycling → Walking → Driving; **Cycling is the default** profile.
+- **Per-stop controls:** Each stop row has a current-location button (`.wp-locate-btn`, `LocateFixed` icon) that fills the stop with the user’s live GPS coords; confirmed stops show an OK indicator + coordinates; the remove button uses the Lucide `X` icon (`.btn-icon-only`).
+- **Stop labels:** No visible Start/End/Stop labels — inputs run full-width; the role stays in the waypoint `label` field and is exposed via `aria-label`.
+- **Search pick:** Selecting a place suggestion must NOT overwrite the stop’s role `label` (the address lives in the input `query`).
+- **Layer naming:** Auto-generated route layer names are plain text with no emoji: `Profile (X.X km, Y min)`, e.g. `Cycling (12.4 km, 45 min)`.
+
 ## Key Architecture & Files
-- `src/App.tsx`: Main app layout, bottom dock, modal management, and viewport controllers.
-- `src/components/MapView.tsx`: Full-screen Leaflet map, custom waypoint pins, and map controllers.
-- `src/components/LayerCards.tsx`: Floating layer cards with visibility toggle, inline rename, and delete.
+- `src/App.tsx`: Main app layout, bottom dock, modal management, user location controls, and viewport controllers.
+- `src/components/MapView.tsx`: Full-screen Leaflet map, custom waypoint pins, borderless location marker, tile resize handler, and map controllers.
+- `src/components/ModalDialog.tsx`: Accessible dialog wrapper with focus trap, aria attributes, and keyboard handling.
+- `src/components/LayerCards.tsx`: Floating layer cards with visibility toggle, inline rename, delete, and keyboard activation.
 - `src/components/RoutePlanner.tsx`: OSRM routing with driving, walking, and cycling travel profiles.
 - `src/components/GeoJSONUploader.tsx`: File importer accepting `.gpx`, `.geojson`, and `.json`.
-- `src/components/SearchBox.tsx`: OSM Nominatim place search scoped to current map bounds.
+- `src/components/SearchBox.tsx`: OSM Nominatim place search scoped to current map bounds with keyboard-navigable listbox.
 - `src/utils/gpx.ts`: Zero-dependency native DOMParser converting GPX tracks/routes/waypoints into GeoJSON with distance and duration calculation.
 - `src/utils/waypointMarkers.ts`: Metadata classification and teardrop SVG marker generator with Lucide icons.
 - `src/hooks/useMapLayers.ts`: Layer state persisted in `localStorage` with non-overlapping color cycling.
+- `src/hooks/useUserLocation.ts`: Live GPS location tracking with permission handling and continuous watching.
 
 ## Validation Commands
 - Build verification: `npm run build` (`tsc -b && vite build`)
-- Dev server: `npm run dev` (running on `http://localhost:5173/`)
+- Dev server: `npm run dev` (running on `https://localhost:5173/` / `https://192.168.x.x:5173/` with local SSL)
+

@@ -32,6 +32,9 @@
   --radius-md: 10px;
   --radius-lg: 20px;
 
+  /* Shared control height so inputs and buttons align */
+  --control-height: 44px;
+
   /* Consistent shadows */
   --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-input-panel: 0 16px 48px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.12);
@@ -190,6 +193,32 @@ div:focus:not(:focus-visible) {
 .locate-btn.locating {
   animation: locateSpin 1.4s linear infinite;
   color: var(--text-primary);
+}
+
+/* ─── Waypoint locate button (Route Planner) ─────────────────────── */
+.wp-locate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.wp-locate-btn:hover {
+  background: #f4f4f5;
+  color: var(--text-primary);
+}
+
+.wp-locate-btn.locating {
+  animation: locateSpin 1.4s linear infinite;
+  color: var(--accent);
 }
 
 /* ─── Floating Bottom Dock ───────────────────────────────────────── */
@@ -377,6 +406,7 @@ div:focus:not(:focus-visible) {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  height: var(--control-height);
   padding: 10px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -436,11 +466,16 @@ div:focus:not(:focus-visible) {
 
 .btn-sm {
   padding: 6px 12px;
+  height: var(--control-height);
   font-size: var(--font-size-base);
 }
 
 .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 6px 8px;
+  height: var(--control-height);
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text-secondary);
@@ -452,6 +487,15 @@ div:focus:not(:focus-visible) {
 .btn-icon:hover {
   background: #f4f4f5;
   color: var(--text-primary);
+}
+
+.btn-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
 }
 
 
@@ -567,6 +611,7 @@ div:focus:not(:focus-visible) {
 .form-group textarea,
 .search-input {
   width: 100%;
+  height: var(--control-height);
   padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -653,6 +698,7 @@ li:last-child .search-result-item,
   align-items: center;
   justify-content: center;
   gap: 6px;
+  height: var(--control-height);
   padding: 10px 12px;
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);

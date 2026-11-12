@@ -248,7 +248,13 @@ export default function App() {
 
       {modal === 'add-route' && (
         <ModalDialog id="route" title="Plan Route" onClose={closeModal}>
-          <RoutePlanner onRouteCreated={handleRouteCreated} onClose={closeModal} />
+          <RoutePlanner
+            onRouteCreated={handleRouteCreated}
+            onClose={closeModal}
+            userCoords={userCoords}
+            requestLocation={requestLocation}
+            locating={locatingUser}
+          />
         </ModalDialog>
       )}
     </div>

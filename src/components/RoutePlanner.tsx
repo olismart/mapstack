@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { LocateFixed, X } from 'lucide-react';
 import type { GeoJSON } from 'geojson';
 import type { RouteProfile } from '../types';
 import { getRoute } from '../utils/osrm';
@@ -7,6 +8,9 @@ import { searchPlaces } from '../utils/nominatim';
 interface RoutePlannerProps {
   onRouteCreated: (name: string, geojson: GeoJSON, distance: number, duration: number) => void;
   onClose: () => void;
+  userCoords?: [number, number] | null;
+  requestLocation?: (onSuccess?: (coords: [number, number]) => void) => void;
+  locating?: boolean;
 }
 
 interface SearchResult {
@@ -29,14 +33,14 @@ function emptyWp(label: string): Waypoint {
   return { label, lat: 0, lon: 0, query: '', results: [], searching: false, confirmed: false };
 }
 
-export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerProps) {
+export default function RoutePlanner({ onRouteCreated, onClose, userCoords, requestLocation, locating = false }: RoutePlannerProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([
     emptyWp('Start'),
     emptyWp('End'),
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<RouteProfile>('driving');
+  const [profile, setProfile] = useState<RouteProfile>('cycling');
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
@@ -100,10 +104,9 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
   }
 
   function pick(index: number, r: SearchResult) {
-    const label = r.displayName.length > 42 ? r.displayName.slice(0, 42) + '…' : r.displayName;
     setWaypoints((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], lat: r.lat, lon: r.lon, label, query: r.displayName, results: [], confirmed: true, searching: false };
+      next[index] = { ...next[index], lat: r.lat, lon: r.lon, query: r.displayName, results: [], confirmed: true, searching: false };
       return next;
     });
   }
@@ -128,6 +131,31 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
     setWaypoints((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function applyMyLocation(index: number, coords: [number, number]) {
+    setWaypoints((prev) => {
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        lat: coords[0],
+        lon: coords[1],
+        query: 'My current location',
+        results: [],
+        searching: false,
+        confirmed: true,
+      };
+      return next;
+    });
+  }
+
+  function useMyLocation(index: number) {
+    if (!requestLocation) return;
+    if (userCoords) {
+      applyMyLocation(index, userCoords);
+    } else {
+      requestLocation((coords) => applyMyLocation(index, coords));
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -142,8 +170,7 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
       const durMin = Math.round(route.duration / 60);
 
       const profName = profile.charAt(0).toUpperCase() + profile.slice(1);
-      const profEmoji = profile === 'driving' ? 'ð' : profile === 'walking' ? 'ð¶' : 'ð²';
-      onRouteCreated(`${profEmoji} ${profName} (${distKm} km, ${durMin} min)`, route.geometry, route.distance, route.duration);
+      onRouteCreated(`${profName} (${distKm} km, ${durMin} min)`, route.geometry, route.distance, route.duration);
       onClose();
     } catch (err: any) {
       setError(err.message ?? 'Failed to fetch route');
@@ -161,7 +188,7 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
           Travel mode
         </label>
         <div className="profile-toggle">
-          {(['driving', 'walking', 'cycling'] as RouteProfile[]).map((p) => (
+          {(['cycling', 'walking', 'driving'] as RouteProfile[]).map((p) => (
             <button
               key={p}
               type="button"
@@ -177,13 +204,6 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
       {waypoints.map((wp, i) => (
         <div key={i} style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <label
-              htmlFor={`route-stop-input-${i}`}
-              style={{ fontSize: 'var(--font-size-base)', fontWeight: 600, minWidth: 48, flexShrink: 0, cursor: 'pointer' }}
-            >
-              {wp.label}
-            </label>
-
             <div style={{ flex: 1, position: 'relative' }}>
               <input
                 id={`route-stop-input-${i}`}
@@ -196,8 +216,8 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
                 style={{ paddingRight: 36, borderColor: wp.confirmed ? '#3cb44b' : undefined }}
               />
 
-              {wp.searching && <span style={{ position: 'absolute', right: 10, top: 10, fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)' }} aria-live="polite">...</span>}
-              {wp.confirmed && <span style={{ position: 'absolute', right: 10, top: 10, fontSize: 'var(--font-size-base)', color: '#3cb44b', fontWeight: 600 }} aria-label="Stop confirmed">OK</span>}
+              {wp.searching && <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)' }} aria-live="polite">...</span>}
+              {wp.confirmed && <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 'var(--font-size-base)', color: '#3cb44b', fontWeight: 600 }} aria-label="Stop confirmed">OK</span>}
 
               {wp.results.length > 0 && !wp.confirmed && (
                 <ul className="search-results" role="listbox" aria-label={`Location suggestions for ${wp.label}`}>
@@ -217,6 +237,18 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
               )}
             </div>
 
+            {requestLocation && (
+              <button
+                type="button"
+                className={`wp-locate-btn${locating ? ' locating' : ''}`}
+                onClick={() => useMyLocation(i)}
+                title="Use my current location"
+                aria-label={`Use current location for ${wp.label}`}
+              >
+                <LocateFixed size={18} strokeWidth={2} />
+              </button>
+            )}
+
             {wp.confirmed ? (
               <button
                 type="button"
@@ -230,19 +262,19 @@ export default function RoutePlanner({ onRouteCreated, onClose }: RoutePlannerPr
             ) : waypoints.length > 2 ? (
               <button
                 type="button"
-                className="btn-icon"
+                className="btn-icon btn-icon-only"
                 onClick={() => removeStop(i)}
                 title="Remove stop"
                 aria-label={`Remove stop ${i + 1} (${wp.label})`}
                 style={{ color: '#d92d20' }}
               >
-                X
+                <X size={18} strokeWidth={2} aria-hidden="true" />
               </button>
             ) : null}
           </div>
 
           {wp.confirmed && (
-            <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)', marginLeft: 56, marginTop: 4 }}>
+            <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)', marginLeft: 0, marginTop: 4 }}>
               {wp.lat.toFixed(5)}, {wp.lon.toFixed(5)}
             </div>
           )}
