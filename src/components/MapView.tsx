@@ -5,7 +5,6 @@ import {
   MapContainer,
   TileLayer,
   GeoJSON,
-  ZoomControl,
   Marker,
   Popup,
   useMap,
@@ -195,7 +194,6 @@ export default function MapView({ layers, viewTarget, userLocation, onMapInit }:
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%' }}
       >
-        <ZoomControl position="topright" />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

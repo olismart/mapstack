@@ -22,11 +22,11 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON, GPX, and Ko
   - Primary: `.btn-primary` (solid accent fill, white text).
   - Secondary: `.btn-secondary` (accent stroke and text, transparent fill, light accent hover tint). Used for the file chooser and add stop.
   - Toggle choices: `.profile-btn` with `.active` for the selected option. Inactive choices use accent stroke/text; the active choice uses a solid accent fill with white text. Shared by travel modes and import source choices.
-- **Control Height:** All inputs and buttons share `--control-height: 44px` so inline controls align vertically (`.search-input`, `.btn`, `.btn-sm`, `.btn-icon`, `.btn-icon-only`, `.wp-locate-btn`, `.profile-btn`).
+- **Control Height:** All inputs and buttons share `--control-height: 44px` so inline controls align vertically (`.search-input`, `.btn`, `.btn-sm`, `.btn-icon`, `.btn-icon-only`, `.wp-locate-btn`, `.profile-btn`). Map zoom and locate buttons (`.zoom-btn`, `.locate-btn`) are exactly `44px × 44px`.
 - **No Emoji in UI:** Use `lucide-react` icons rather than emoji glyphs in new UI text/labels.
 - **Layout & Viewport:** Mobile-first, full-bleed map (`100vw` x `100dvh` with `-webkit-fill-available` fallback):
   - **Screen Margin:** Standardized `--screen-margin: 16px` from viewport edges.
-  - **Top-right:** Zoom controls (`--panel-radius: 20px`, `margin: 0 !important`) with floating locate button (`.locate-btn`) directly underneath in neutral monochrome.
+  - **Top-right:** Custom Lucide icon zoom controls and the floating locate button (`.locate-btn`) grouped in `.map-floating-controls`; every button is `44px × 44px`, with `--panel-radius: 20px` and neutral monochrome styling.
   - **Bottom Dock:** Fixed `.bottom-dock` (`position: fixed`) floating above mobile browser toolbars with `env(safe-area-inset-bottom)` offsets containing:
     1. Standalone layer cards stack (`.layer-card-stack`) floating directly above the controls.
     2. 3-button action pill (`.bottom-action-bar`): `[Search]`, `[New Route]`, `[Import]`.

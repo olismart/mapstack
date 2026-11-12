@@ -66,8 +66,7 @@ html, body, #root {
 /* Allow text selection for readability and copy, prevent selection on dragging controls */
 .leaflet-container,
 .bottom-dock,
-.leaflet-control-zoom,
-.locate-btn {
+.map-floating-controls {
   user-select: none;
 }
 
@@ -122,51 +121,68 @@ div:focus:not(:focus-visible) {
   bottom: calc(var(--screen-margin) + 70px);
 }
 
-.leaflet-top.leaflet-right {
+/* ─── Floating Map Controls ──────────────────────────────────────── */
+.map-floating-controls {
+  position: absolute;
   top: var(--screen-margin);
   right: var(--screen-margin);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
-.leaflet-control-zoom {
-  margin: 0 !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--panel-radius) !important;
-  box-shadow: var(--shadow-panel) !important;
-  overflow: hidden;
+.zoom-controls {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--panel-radius);
   background: var(--surface-translucent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
 }
 
-.leaflet-control-zoom a {
-  background: transparent !important;
-  color: var(--text-primary) !important;
-  border-bottom: 1px solid var(--border) !important;
-  width: 34px !important;
-  height: 34px !important;
-  line-height: 34px !important;
-  font-family: var(--font-mono) !important;
-  font-size: 16px !important;
+.zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
   transition: all 0.15s ease-out;
 }
 
-.leaflet-control-zoom a:last-child {
-  border-bottom: none !important;
+.zoom-btn + .zoom-btn {
+  border-top: 1px solid var(--border);
 }
 
-.leaflet-control-zoom a:hover {
-  background: #f4f4f5 !important;
-  color: var(--accent) !important;
+.zoom-btn:hover {
+  background: #f4f4f5;
+  color: var(--accent);
 }
 
-/* ─── Floating Locate Button (below zoom controls) ───────────────── */
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .locate-btn {
-  position: absolute;
-  top: calc(var(--screen-margin) + 76px);
-  right: var(--screen-margin);
-  z-index: 1000;
-  width: 34px;
-  height: 34px;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border-radius: var(--panel-radius);
   border: 1px solid var(--border);
   background: var(--surface-translucent);

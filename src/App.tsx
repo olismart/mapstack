@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { GeoJSON } from 'geojson';
-import { Search, Compass, UploadCloud, LocateFixed } from 'lucide-react';
+import { Search, Compass, UploadCloud, LocateFixed, Plus, Minus } from 'lucide-react';
 import type { SearchResult, ModalMode, MapLayer, SearchBounds, ViewTarget } from './types';
 import { useMapLayers } from './hooks/useMapLayers';
 import { useUserLocation } from './hooks/useUserLocation';
@@ -183,16 +183,41 @@ export default function App() {
         onMapInit={(m) => setMap(m)}
       />
 
-      {/* Floating Locate Button below zoom controls */}
-      <button
-        type="button"
-        className={`locate-btn ${locatingUser ? 'locating' : ''}`}
-        onClick={handleLocateClick}
-        title={userCoords ? 'Zoom to your location' : 'Find your location'}
-        aria-label="Find my location"
-      >
-        <LocateFixed size={18} strokeWidth={2} />
-      </button>
+      {/* Floating map controls */}
+      <div className="map-floating-controls">
+        <div className="zoom-controls" role="group" aria-label="Map zoom controls">
+          <button
+            type="button"
+            className="zoom-btn"
+            onClick={() => map?.zoomIn()}
+            disabled={!map}
+            title="Zoom in"
+            aria-label="Zoom in"
+          >
+            <Plus size={18} strokeWidth={2} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="zoom-btn"
+            onClick={() => map?.zoomOut()}
+            disabled={!map}
+            title="Zoom out"
+            aria-label="Zoom out"
+          >
+            <Minus size={18} strokeWidth={2} aria-hidden="true" />
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className={`locate-btn ${locatingUser ? 'locating' : ''}`}
+          onClick={handleLocateClick}
+          title={userCoords ? 'Zoom to your location' : 'Find your location'}
+          aria-label="Find my location"
+        >
+          <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
+        </button>
+      </div>
 
       {/* Floating Bottom Dock (Layer cards + Actions) */}
       <div className="bottom-dock">
