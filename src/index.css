@@ -593,6 +593,34 @@ div:focus:not(:focus-visible) {
   border-top: 1px solid var(--border);
 }
 
+.import-source-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.import-source-btn {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 8px;
+}
+
+.form-help,
+.form-error {
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.form-help {
+  color: var(--text-secondary);
+}
+
+.form-error {
+  color: var(--danger);
+}
+
 /* ─── Forms & Inputs ────────────────────────────────────────────── */
 .form-group {
   margin-bottom: 16px;
@@ -608,6 +636,7 @@ div:focus:not(:focus-visible) {
 }
 
 .form-group input[type="text"],
+.form-group input[type="url"],
 .form-group textarea,
 .search-input {
   width: 100%;

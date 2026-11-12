@@ -8,7 +8,7 @@ import { useUserLocation } from './hooks/useUserLocation';
 import MapView from './components/MapView';
 import LayerCards from './components/LayerCards';
 import SearchBox from './components/SearchBox';
-import GeoJSONUploader from './components/GeoJSONUploader';
+import RouteImporter from './components/RouteImporter';
 import RoutePlanner from './components/RoutePlanner';
 import ModalDialog from './components/ModalDialog';
 
@@ -241,8 +241,8 @@ export default function App() {
       )}
 
       {modal === 'add-geojson' && (
-        <ModalDialog id="upload" title="Import GPX / GeoJSON" onClose={closeModal}>
-          <GeoJSONUploader onImport={handleGeoJSONImport} onClose={closeModal} />
+        <ModalDialog id="upload" title="Import Route" onClose={closeModal}>
+          <RouteImporter onImport={handleGeoJSONImport} onClose={closeModal} />
         </ModalDialog>
       )}
 
