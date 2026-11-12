@@ -28,7 +28,7 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON, GPX, and Ko
   - **Screen Margin:** Standardized `--screen-margin: 16px` from viewport edges.
   - **Top-right:** Custom Lucide icon zoom controls and the floating locate button (`.locate-btn`) grouped in `.map-floating-controls`; every button is `44px × 44px`, with `--panel-radius: 20px` and neutral monochrome styling.
   - **Bottom Dock:** Fixed `.bottom-dock` (`position: fixed`) floating above mobile browser toolbars with `env(safe-area-inset-bottom)` offsets containing:
-    1. Standalone layer cards stack (`.layer-card-stack`) floating directly above the controls.
+    1. Standalone layer cards stack (`.layer-card-stack`) floating directly above the controls, with the newest layer first.
     2. 3-button action pill (`.bottom-action-bar`): `[Search]`, `[New Route]`, `[Import]`.
   - **Action & Modal Naming:** Each dialog title exactly matches its bottom-bar action: `Search`, `New Route`, and `Import`.
   - **Layer Cards:** Squarer corners (`--card-radius: 6px`) to distinguish from rounded control pills.

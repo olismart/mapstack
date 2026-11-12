@@ -36,7 +36,7 @@ export default function LayerCards({
 
   return (
     <div className="layer-card-stack">
-      {layers.map((layer) => (
+      {[...layers].reverse().map((layer) => (
         <div
           key={layer.id}
           className={`layer-card ${!layer.visible ? 'layer-card-hidden' : ''}`}
