@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import type { MapLayer } from '../types';
-import { Eye, EyeOff, Trash2, Check } from 'lucide-react';
+import type { MapLayer, SearchBounds } from '../types';
+import { haveSearchBoundsChanged } from '../utils/bounds';
+import { Eye, EyeOff, Trash2, Check, RefreshCw } from 'lucide-react';
 
 interface LayerCardsProps {
   layers: MapLayer[];
@@ -9,6 +10,9 @@ interface LayerCardsProps {
   onRemove: (id: string) => void;
   onRename: (id: string, name: string) => void;
   onFocusLayer?: (layer: MapLayer) => void;
+  onUpdate?: (layer: MapLayer) => void;
+  updatingLayerId?: string | null;
+  currentBounds?: SearchBounds | null;
 }
 
 export default function LayerCards({
@@ -18,6 +22,9 @@ export default function LayerCards({
   onRemove,
   onRename,
   onFocusLayer,
+  onUpdate,
+  updatingLayerId = null,
+  currentBounds = null,
 }: LayerCardsProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -75,6 +82,10 @@ export default function LayerCards({
       }
     }
     onFocusLayer?.(layer);
+  }
+
+  function canUpdateLayer(layer: MapLayer): boolean {
+    return haveSearchBoundsChanged(layer.categorySearch?.bounds, currentBounds);
   }
 
   return (
@@ -151,29 +162,49 @@ export default function LayerCards({
           </div>
 
           <div className="layer-card-actions" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className={`layer-btn-icon ${!layer.visible ? 'layer-btn-muted' : ''}`}
-              onClick={() => onToggle(layer.id)}
-              title={layer.visible ? 'Hide on map' : 'Show on map'}
-              aria-label={layer.visible ? `Hide layer ${layer.name}` : `Show layer ${layer.name}`}
-            >
-              {layer.visible ? (
-                <Eye size={18} strokeWidth={2} aria-hidden="true" />
-              ) : (
-                <EyeOff size={18} strokeWidth={2} aria-hidden="true" />
-              )}
-            </button>
+            {layer.categorySearch && onUpdate && (
+              <button
+                type="button"
+                className={`layer-btn-icon layer-btn-update ${updatingLayerId === layer.id ? 'layer-btn-updating' : ''}`}
+                onClick={() => onUpdate(layer)}
+                disabled={updatingLayerId !== null || !canUpdateLayer(layer)}
+                title={canUpdateLayer(layer)
+                  ? 'Update results in current map view'
+                  : 'Pan or zoom to enable updates'}
+                aria-label={canUpdateLayer(layer)
+                  ? `Update ${layer.categorySearch.label.toLowerCase()} in current map view`
+                  : `Update ${layer.categorySearch.label.toLowerCase()}; pan or zoom to enable`}
+                aria-busy={updatingLayerId === layer.id}
+              >
+                <RefreshCw size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
+            )}
 
-            <button
-              type="button"
-              className="layer-btn-icon layer-btn-danger"
-              onClick={() => onRemove(layer.id)}
-              title="Delete layer"
-              aria-label={`Delete layer ${layer.name}`}
-            >
-              <Trash2 size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
+            <div className="layer-card-primary-actions">
+              <button
+                type="button"
+                className={`layer-btn-icon ${!layer.visible ? 'layer-btn-muted' : ''}`}
+                onClick={() => onToggle(layer.id)}
+                title={layer.visible ? 'Hide on map' : 'Show on map'}
+                aria-label={layer.visible ? `Hide layer ${layer.name}` : `Show layer ${layer.name}`}
+              >
+                {layer.visible ? (
+                  <Eye size={18} strokeWidth={2} aria-hidden="true" />
+                ) : (
+                  <EyeOff size={18} strokeWidth={2} aria-hidden="true" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="layer-btn-icon layer-btn-danger"
+                onClick={() => onRemove(layer.id)}
+                title="Delete layer"
+                aria-label={`Delete layer ${layer.name}`}
+              >
+                <Trash2 size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
       ))}

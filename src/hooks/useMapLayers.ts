@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { GeoJSON } from 'geojson';
-import type { MapLayer, LayerStyle } from '../types';
+import type { MapLayer, LayerStyle, CategoryLayerSearch, SearchBounds } from '../types';
 import { uid } from '../utils/id';
 import { useLocalStorage } from './useLocalStorage';
 
@@ -67,7 +67,7 @@ export function useMapLayers() {
 
   /** Add a layer with data already populated */
   const addLayerWithData = useCallback(
-    (name: string, data: GeoJSON, style?: LayerStyle) => {
+    (name: string, data: GeoJSON, style?: LayerStyle, categorySearch?: CategoryLayerSearch) => {
       let createdLayer: MapLayer | null = null;
       setLayers((prev) => {
         const nextColor = getNextLayerColor(prev);
@@ -84,6 +84,7 @@ export function useMapLayers() {
           visible: true,
           data,
           style: resolvedStyle,
+          categorySearch,
           updatedAt: Date.now(),
         };
         createdLayer = layer;
@@ -112,12 +113,21 @@ export function useMapLayers() {
     [setLayers],
   );
 
-  /** Update the data of an existing layer */
+  /** Update layer data and, for category layers, the last successful query bounds. */
   const updateLayerData = useCallback(
-    (id: string, data: GeoJSON) => {
+    (id: string, data: GeoJSON, bounds?: SearchBounds) => {
       setLayers((prev) =>
         prev.map((l) =>
-          l.id === id ? { ...l, data, updatedAt: Date.now() } : l,
+          l.id === id
+            ? {
+                ...l,
+                data,
+                categorySearch: l.categorySearch
+                  ? { ...l.categorySearch, bounds: bounds ?? l.categorySearch.bounds }
+                  : undefined,
+                updatedAt: Date.now(),
+              }
+            : l,
         ),
       );
     },

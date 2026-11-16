@@ -1,93 +1,109 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNominatim } from '../hooks/useNominatim';
-import type { SearchResult, SearchBounds } from '../types';
+import { useState } from 'react';
+import { usePlaceSearch } from '../hooks/usePlaceSearch';
+import type { CategorySearch, SearchResult, SearchBounds } from '../types';
 
 interface SearchBoxProps {
   onResultClick: (result: SearchResult) => void;
+  onCategoryResults: (
+    results: SearchResult[],
+    category: CategorySearch,
+    selected?: SearchResult,
+  ) => void;
   onClose: () => void;
   /** Callback that returns the current map viewport bounds, or null if unknown */
   getBounds?: () => SearchBounds | null;
 }
 
-export default function SearchBox({ onResultClick, onClose, getBounds }: SearchBoxProps) {
+export default function SearchBox({ onResultClick, onCategoryResults, onClose, getBounds }: SearchBoxProps) {
   const [query, setQuery] = useState('');
-  const { results, loading, error, search, clear } = useNominatim();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const {
+    results, category, truncated, loading, error, hasSearched, search, clear,
+  } = usePlaceSearch();
 
-  useEffect(() => {
-    // Only autofocus on larger screens so mobile keyboard doesn't instantly block view
-    if (window.innerWidth >= 640) {
-      inputRef.current?.focus();
-    }
-  }, []);
-
-  // Snapshot map bounds on every keystroke so results stay scoped to the viewport
-  const doSearch = useCallback((q: string) => {
-    search(q, getBounds?.() ?? undefined);
-  }, [search, getBounds]);
-
-  useEffect(() => {
-    doSearch(query);
-  }, [query, doSearch]);
-
-  function handleSelect(result: SearchResult) {
-    onResultClick(result);
+  function finish() {
     clear();
     setQuery('');
     onClose();
   }
 
+  function handleSelect(result: SearchResult) {
+    if (category) onCategoryResults(results, category, result);
+    else onResultClick(result);
+    finish();
+  }
+
+  function handleShowAll() {
+    if (!category || results.length === 0) return;
+    onCategoryResults(results, category);
+    finish();
+  }
+
   return (
-    <div>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void search(query, getBounds?.() ?? undefined);
+      }}
+      aria-busy={loading}
+    >
       <div className="form-group">
         <label htmlFor="search-places-input">Search query</label>
-        <input
-          id="search-places-input"
-          ref={inputRef}
-          type="text"
-          className="search-input"
-          placeholder="Search places… (e.g. restaurants in view)"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search places within viewport"
-        />
+        <div className="search-form-row">
+          <input
+            id="search-places-input"
+            type="search"
+            className="search-input"
+            placeholder="Search places or categories…"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              clear();
+            }}
+            aria-label="Search places and categories within viewport"
+            autoComplete="off"
+          />
+          <button type="submit" className="btn btn-primary" disabled={loading || query.trim().length < 2}>
+            {loading ? 'Searching…' : 'Search'}
+          </button>
+        </div>
       </div>
-      <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)', marginBottom: 12 }}>
-        {getBounds
-          ? 'Results are scoped to the current map view.'
-          : 'Search worldwide — pan & zoom to scope results.'}
-      </p>
 
-      {loading && <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)' }}>Searching…</p>}
-      {error && <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--danger)' }}>{error}</p>}
+      {loading && <p className="search-status" role="status">Searching…</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
+      {truncated && (
+        <p className="search-status">Showing the first {results.length} results. Zoom in to narrow the area.</p>
+      )}
 
       {results.length > 0 && (
         <ul className="search-results" role="listbox" aria-label="Search suggestions">
-          {results.map((r, i) => (
-            <li key={i} role="presentation">
+          {results.map((result, index) => (
+            <li key={result.id ?? `${result.lat},${result.lon},${index}`} role="presentation">
               <button
                 type="button"
                 role="option"
                 className="search-result-item"
-                onClick={() => handleSelect(r)}
+                onClick={() => handleSelect(result)}
               >
-                <span>{r.displayName}</span>
-                <span className="result-type">{r.type}</span>
+                <span className="result-name">{result.displayName}</span>
+                <span className="result-type">{result.type}</span>
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      {!loading && query.length >= 2 && results.length === 0 && !error && (
-        <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-secondary)', marginTop: 8 }}>
-          No results found
-        </p>
+      {!loading && hasSearched && results.length === 0 && !error && (
+        <p className="search-status">No results found</p>
       )}
 
-      <div className="modal-actions">
-        <button className="btn" onClick={onClose}>Cancel</button>
+      <div className="modal-actions search-actions">
+        {category && results.length > 0 && (
+          <button type="button" className="btn btn-primary" onClick={handleShowAll}>
+            Show all {results.length} on map
+          </button>
+        )}
+        <button type="button" className="btn" onClick={onClose}>Cancel</button>
       </div>
-    </div>
+    </form>
   );
 }

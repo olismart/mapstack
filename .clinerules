@@ -76,7 +76,8 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON, GPX, and Ko
 - `src/components/RouteImporter.tsx`: Komoot/file source selection and shared import callback wiring.
 - `src/components/KomootImporter.tsx`: Komoot share-link form, request cancellation, GPX parsing, and import error display.
 - `src/components/GeoJSONUploader.tsx`: File importer accepting `.gpx`, `.geojson`, and `.json`.
-- `src/components/SearchBox.tsx`: OSM Nominatim place search scoped to current map bounds with keyboard-navigable listbox.
+- `src/components/SearchBox.tsx`: OSM Nominatim named-place search and Postpass category search scoped to current map bounds with keyboard-navigable listbox.
+- `src/utils/postpass.ts`: No-key Postpass category queries, bounded SQL generation, GeoJSON normalization, and 100-result limiting.
 - `src/utils/komoot.ts`: Komoot URL validation, Tour ID extraction, and share-token handling.
 - `src/utils/gpx.ts`: Zero-dependency native DOMParser converting GPX tracks/routes/waypoints into GeoJSON with distance and duration calculation.
 - `src/utils/waypointMarkers.ts`: Metadata classification and teardrop SVG marker generator with Lucide icons.
@@ -87,6 +88,7 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON, GPX, and Ko
 - `src/hooks/useMapLayers.ts`: Layer state persisted in `localStorage` with non-overlapping color cycling.
 - `src/hooks/useUserLocation.ts`: Live GPS location tracking with permission handling and continuous watching.
 - `tests/komoot.test.mjs`: Node tests for URL validation, GPX imports, coordinate fallback, and error handling.
+- `tests/search.test.mjs`: Node tests for category aliases, Postpass SQL, GeoJSON normalization, result limits, and provider errors.
 
 ## Validation Commands
 - Automated tests: `npm test` (Node test runner; includes Komoot URL, API, fallback, and error-handling coverage)

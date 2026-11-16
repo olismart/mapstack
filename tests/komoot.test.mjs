@@ -9,6 +9,7 @@ let handleKomootImport;
 before(async () => {
   vite = await createServer({
     configFile: false,
+    cacheDir: 'node_modules/.vite-tests/komoot',
     logLevel: 'silent',
     server: { middlewareMode: true },
     appType: 'custom',

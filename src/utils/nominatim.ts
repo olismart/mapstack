@@ -12,6 +12,7 @@ const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
 export async function searchPlaces(
   query: string,
   bounds?: SearchBounds,
+  signal?: AbortSignal,
 ): Promise<SearchResult[]> {
   if (!query.trim()) return [];
 
@@ -31,12 +32,8 @@ export async function searchPlaces(
 
   const url = `${NOMINATIM_BASE}/search?${params}`;
 
-  const res = await fetch(url, {
-    headers: {
-      // Nominatim requires a User-Agent
-      'User-Agent': 'Mapstack/0.1 (learning project)',
-    },
-  });
+  // Browser requests identify the application with their HTTP Referer.
+  const res = await fetch(url, { signal });
 
   if (!res.ok) {
     throw new Error(`Nominatim search failed (${res.status})`);

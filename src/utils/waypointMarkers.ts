@@ -54,10 +54,33 @@ const CATEGORY_COLORS: Record<WaypointCategory, string> = {
  */
 export function classifyWaypoint(props: Record<string, any>): WaypointMetadata {
   const text = `${props.name || ''} ${props.description || ''} ${props.desc || ''} ${props.cmt || ''} ${props.sym || ''}`.toLowerCase();
+  const amenity = String(props.amenity || '').toLowerCase();
+  const tourism = String(props.tourism || '').toLowerCase();
+  const historic = String(props.historic || '').toLowerCase();
 
   let category: WaypointCategory = 'pin';
 
-  if (text.includes('camp') || text.includes('bivvy') || text.includes('tent') || text.includes('shelter')) {
+  if (props.shop) {
+    category = 'shop';
+  } else if (amenity === 'cafe') {
+    category = 'cafe';
+  } else if (['restaurant', 'fast_food', 'food_court'].includes(amenity)) {
+    category = 'food';
+  } else if (['pub', 'bar', 'biergarten'].includes(amenity)) {
+    category = 'pub';
+  } else if (['camp_site', 'caravan_site'].includes(tourism)) {
+    category = 'camp';
+  } else if (['hotel', 'hostel', 'guest_house', 'motel'].includes(tourism)) {
+    category = 'lodging';
+  } else if (amenity === 'drinking_water') {
+    category = 'water';
+  } else if (amenity === 'fuel') {
+    category = 'fuel';
+  } else if (tourism === 'viewpoint') {
+    category = 'view';
+  } else if (historic) {
+    category = 'castle';
+  } else if (text.includes('camp') || text.includes('bivvy') || text.includes('tent') || text.includes('shelter')) {
     category = 'camp';
   } else if (text.includes('pub') || text.includes('bar') || text.includes('inn') || text.includes('brewery') || text.includes('beer')) {
     category = 'pub';

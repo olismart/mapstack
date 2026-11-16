@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { GeoJSON } from 'geojson';
-import { Search, Compass, UploadCloud, LocateFixed, Plus, Minus } from 'lucide-react';
-import type { SearchResult, ModalMode, MapLayer, SearchBounds, ViewTarget } from './types';
+import { Search, Compass, UploadCloud, LocateFixed, Plus, Minus, X } from 'lucide-react';
+import type { SearchResult, ModalMode, MapLayer, SearchBounds, ViewTarget, CategorySearch } from './types';
+import { categoryResultsToGeoJSON, getCategoryById, searchCategory } from './utils/postpass';
 import { useMapLayers } from './hooks/useMapLayers';
 import { useUserLocation } from './hooks/useUserLocation';
 import MapView from './components/MapView';
@@ -77,7 +78,7 @@ export function getCombinedBounds(layers: MapLayer[]): LatLngBoundsLiteral | nul
 export default function App() {
   const {
     layers, addLayerWithData, removeLayer, toggleLayer,
-    renameLayer,
+    renameLayer, updateLayerData,
   } = useMapLayers();
 
   const { coords: userCoords, loading: locatingUser, requestLocation } = useUserLocation();
@@ -85,9 +86,25 @@ export default function App() {
   const [modal, setModal] = useState<ModalMode>(null);
   const [viewTarget, setViewTarget] = useState<ViewTarget | null>(null);
   const [map, setMap] = useState<LeafletMap | null>(null);
+  const [currentBounds, setCurrentBounds] = useState<SearchBounds | null>(null);
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
+  const [updatingLayerId, setUpdatingLayerId] = useState<string | null>(null);
+  const [mapNotice, setMapNotice] = useState<string | null>(null);
+  const categoryUpdateRef = useRef<{ layerId: string; controller: AbortController } | null>(null);
   const initializedRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
+
+  // Current map viewport for search scoping and category refresh state.
+  const getBounds = useCallback((): SearchBounds | null => {
+    if (!map) return null;
+    const b = map.getBounds();
+    return {
+      minLon: b.getWest(),
+      minLat: b.getSouth(),
+      maxLon: b.getEast(),
+      maxLat: b.getNorth(),
+    };
+  }, [map]);
 
   // Initial bounds setup for layers (if any exist)
   useEffect(() => {
@@ -112,6 +129,49 @@ export default function App() {
     }
   }, [userCoords, layers]);
 
+  useEffect(() => {
+    if (!map) {
+      setCurrentBounds(null);
+      return;
+    }
+    const updateBounds = () => setCurrentBounds(getBounds());
+    updateBounds();
+    map.on('moveend', updateBounds);
+    map.on('resize', updateBounds);
+    return () => {
+      map.off('moveend', updateBounds);
+      map.off('resize', updateBounds);
+    };
+  }, [map, getBounds]);
+
+  // Older saved category layers did not record their original viewport.
+  useEffect(() => {
+    if (!map) return;
+    const pending = layers.filter((layer) =>
+      layer.categorySearch && !layer.categorySearch.bounds && layer.data,
+    );
+    if (pending.length === 0) return;
+
+    let completed = false;
+    const setInitialBaselines = () => {
+      if (completed) return;
+      completed = true;
+      const bounds = getBounds();
+      if (!bounds) return;
+      for (const layer of pending) {
+        updateLayerData(layer.id, layer.data!, bounds);
+      }
+    };
+
+    // Let initial fitBounds/viewTarget movement settle before marking the baseline.
+    map.once('moveend', setInitialBaselines);
+    const timer = setTimeout(setInitialBaselines, 1100);
+    return () => {
+      map.off('moveend', setInitialBaselines);
+      clearTimeout(timer);
+    };
+  }, [map, layers, getBounds, updateLayerData]);
+
   const handleLocateClick = useCallback(() => {
     if (userCoords) {
       setViewTarget({ type: 'center', center: userCoords, zoom: 15 });
@@ -135,6 +195,25 @@ export default function App() {
     );
     setViewTarget({ type: 'center', center: [result.lat, result.lon], zoom: 14 });
   }, [addLayerWithData]);
+
+  const handleCategoryResults = useCallback((
+    results: SearchResult[],
+    category: CategorySearch,
+    selected?: SearchResult,
+  ) => {
+    const data = categoryResultsToGeoJSON(results);
+    addLayerWithData(
+      category.label,
+      data,
+      { fillOpacity: 0.25, weight: 2 },
+      results.length > 1
+        ? { ...category, bounds: getBounds() ?? undefined }
+        : undefined,
+    );
+    if (selected) {
+      setViewTarget({ type: 'center', center: [selected.lat, selected.lon], zoom: 16 });
+    }
+  }, [addLayerWithData, getBounds]);
 
   const handleGeoJSONImport = useCallback((name: string, data: GeoJSON) => {
     addLayerWithData(name, data, { weight: 4, opacity: 0.9, fillOpacity: 0.15 });
@@ -162,21 +241,55 @@ export default function App() {
   }, []);
 
   const handleRemoveLayer = useCallback((id: string) => {
+    if (categoryUpdateRef.current?.layerId === id) {
+      categoryUpdateRef.current.controller.abort();
+      categoryUpdateRef.current = null;
+      setUpdatingLayerId(null);
+    }
     removeLayer(id);
     setActiveLayerId((current) => current === id ? null : current);
   }, [removeLayer]);
 
-  // Capture current map viewport for smart search scoping
-  const getBounds = useCallback((): SearchBounds | null => {
-    if (!map) return null;
-    const b = map.getBounds();
-    return {
-      minLon: b.getWest(),
-      minLat: b.getSouth(),
-      maxLon: b.getEast(),
-      maxLat: b.getNorth(),
-    };
-  }, [map]);
+  const handleUpdateLayer = useCallback(async (layer: MapLayer) => {
+    if (!layer.categorySearch || categoryUpdateRef.current) return;
+    const category = getCategoryById(layer.categorySearch.id);
+    if (!category) {
+      setMapNotice('This category is no longer supported. Existing results were kept.');
+      return;
+    }
+    const bounds = getBounds();
+    if (!bounds) {
+      setMapNotice('Map bounds are unavailable. Move the map and try again.');
+      return;
+    }
+
+    const controller = new AbortController();
+    categoryUpdateRef.current = { layerId: layer.id, controller };
+    setUpdatingLayerId(layer.id);
+    setMapNotice(null);
+
+    try {
+      const { results } = await searchCategory(category, bounds, controller.signal);
+      if (results.length === 0) {
+        throw new Error(`No ${category.label.toLowerCase()} found in this map view. Existing results were kept.`);
+      }
+      updateLayerData(layer.id, categoryResultsToGeoJSON(results), bounds);
+      setActiveLayerId(layer.id);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      setMapNotice(error instanceof Error ? error.message : 'Could not update this layer. Please try again.');
+    } finally {
+      if (categoryUpdateRef.current?.controller === controller) {
+        categoryUpdateRef.current = null;
+        setUpdatingLayerId(null);
+      }
+    }
+  }, [getBounds, updateLayerData]);
+
+  useEffect(() => () => {
+    categoryUpdateRef.current?.controller.abort();
+    categoryUpdateRef.current = null;
+  }, []);
 
   function closeModal() { setModal(null); }
 
@@ -228,6 +341,15 @@ export default function App() {
 
       {/* Floating Bottom Dock (Layer cards + Actions) */}
       <div className="bottom-dock">
+        {mapNotice && (
+          <div className="map-notice" role="alert">
+            <span>{mapNotice}</span>
+            <button type="button" onClick={() => setMapNotice(null)} aria-label="Dismiss update error" title="Dismiss">
+              <X size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
         <LayerCards
           layers={layers}
           activeLayerId={activeLayerId}
@@ -235,6 +357,9 @@ export default function App() {
           onRemove={handleRemoveLayer}
           onRename={renameLayer}
           onFocusLayer={handleFocusLayer}
+          onUpdate={handleUpdateLayer}
+          updatingLayerId={updatingLayerId}
+          currentBounds={currentBounds}
         />
 
         <div className="bottom-action-bar">
@@ -269,7 +394,12 @@ export default function App() {
 
       {modal === 'search' && (
         <ModalDialog id="search" title="Search" onClose={closeModal}>
-          <SearchBox onResultClick={handleSearchResult} onClose={closeModal} getBounds={getBounds} />
+          <SearchBox
+            onResultClick={handleSearchResult}
+            onCategoryResults={handleCategoryResults}
+            onClose={closeModal}
+            getBounds={getBounds}
+          />
         </ModalDialog>
       )}
 

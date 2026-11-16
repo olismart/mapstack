@@ -2,6 +2,18 @@ import type { GeoJSON } from 'geojson';
 
 // ─── Layer Types ───────────────────────────────────────────────────
 
+export interface CategorySearch {
+  /** Stable id from the category registry */
+  id: string;
+  /** User-visible category name */
+  label: string;
+}
+
+export interface CategoryLayerSearch extends CategorySearch {
+  /** Viewport used for the last successful category query */
+  bounds?: SearchBounds;
+}
+
 export interface MapLayer {
   /** Unique id for this layer instance */
   id: string;
@@ -13,6 +25,8 @@ export interface MapLayer {
   data: GeoJSON | null;
   /** Styling overrides applied to this layer */
   style?: LayerStyle;
+  /** Category query that can be rerun in the current viewport */
+  categorySearch?: CategoryLayerSearch;
   /** When this layer was created / last updated */
   updatedAt: number;
 }
@@ -28,11 +42,15 @@ export interface LayerStyle {
 // ─── Search Types ──────────────────────────────────────────────────
 
 export interface SearchResult {
+  id?: string;
   displayName: string;
+  name?: string;
+  detail?: string;
   lat: number;
   lon: number;
   type: string;
   importance: number;
+  tags?: Record<string, string>;
 }
 
 /** Bounding box for viewport-restricted searches (SW corner → NE corner) */
