@@ -28,7 +28,7 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON, GPX, and Ko
   - **Screen Margin:** Standardized `--screen-margin: 16px` from viewport edges.
   - **Top-right:** Custom Lucide icon zoom controls and the floating locate button (`.locate-btn`) grouped in `.map-floating-controls`; every button is `44px × 44px`, with `--panel-radius: 20px` and neutral monochrome styling.
   - **Bottom Dock:** Fixed `.bottom-dock` (`position: fixed`) floating above mobile browser toolbars with `env(safe-area-inset-bottom)` offsets containing:
-    1. Standalone layer cards stack (`.layer-card-stack`) floating directly above the controls, with the newest layer first.
+    1. Horizontal standalone layer cards stack (`.layer-card-stack`) floating directly above the controls, with the newest layer first (leftmost). The scroll viewport is full-bleed with `16px` internal start/end spacing so partially visible cards clip at the physical screen edges. Cards have explicit `min(80vw, 320px)` width limits and a `92px` height. Content is top-aligned, visibility/delete icons stack vertically, and titles wrap to a maximum of three lines with an ellipsis. Activating a partially visible card smooth-scrolls it fully into view and marks it active with an accent border / `aria-current`. Tap the active title to edit; the editing textarea and card expand to show the full name. Edits commit on blur, Enter confirms, and Escape cancels. The stack uses native horizontal overflow scrolling without scroll snapping.
     2. 3-button action pill (`.bottom-action-bar`): `[Search]`, `[New Route]`, `[Import]`.
   - **Action & Modal Naming:** Each dialog title exactly matches its bottom-bar action: `Search`, `New Route`, and `Import`.
   - **Layer Cards:** Squarer corners (`--card-radius: 6px`) to distinguish from rounded control pills.
@@ -38,7 +38,7 @@ A minimalist, mobile-first mapping web app with multi-layer GeoJSON, GPX, and Ko
 - **Form Controls:** Every input must be programmatically associated with a label via `htmlFor` / `id` or an explicit `aria-label` (route stop inputs use `aria-label` since their visible labels were removed for full-width layout).
 - **Dialogs:** All modals use `ModalDialog.tsx` with `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, focus trapping, focus restoration, and Escape key dismissal.
 - **Accessible Names:** All icon-only buttons must provide explicit `aria-label` attributes.
-- **Keyboard Navigation:** Autocomplete suggestions use `<button role="option">` inside `<ul role="listbox">`. Layer cards have `role="button"`, `tabIndex={0}`, and activate via Enter / Space.
+- **Keyboard Navigation:** Autocomplete suggestions use `<button role="option">` inside `<ul role="listbox">`. Layer cards are labelled groups with `aria-current` on the active route; native title buttons handle activation/editing, and all action buttons remain keyboard accessible.
 - **Focus Indicators:** Global `:focus-visible` outline (`2px solid var(--accent); outline-offset: 2px`).
 - **Text Selection:** `user-select: none` is restricted only to draggable map controls and toolbars, leaving body text selectable.
 

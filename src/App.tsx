@@ -85,6 +85,7 @@ export default function App() {
   const [modal, setModal] = useState<ModalMode>(null);
   const [viewTarget, setViewTarget] = useState<ViewTarget | null>(null);
   const [map, setMap] = useState<LeafletMap | null>(null);
+  const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
   const initializedRef = useRef(false);
   const hasCenteredOnUserRef = useRef(false);
 
@@ -152,12 +153,18 @@ export default function App() {
   }, [addLayerWithData]);
 
   const handleFocusLayer = useCallback((layer: MapLayer) => {
+    setActiveLayerId(layer.id);
     if (!layer.data) return;
     const bounds = getGeoJSONBounds(layer.data);
     if (bounds) {
       setViewTarget({ type: 'bounds', bounds, padding: [60, 60] });
     }
   }, []);
+
+  const handleRemoveLayer = useCallback((id: string) => {
+    removeLayer(id);
+    setActiveLayerId((current) => current === id ? null : current);
+  }, [removeLayer]);
 
   // Capture current map viewport for smart search scoping
   const getBounds = useCallback((): SearchBounds | null => {
@@ -223,8 +230,9 @@ export default function App() {
       <div className="bottom-dock">
         <LayerCards
           layers={layers}
+          activeLayerId={activeLayerId}
           onToggle={toggleLayer}
-          onRemove={removeLayer}
+          onRemove={handleRemoveLayer}
           onRename={renameLayer}
           onFocusLayer={handleFocusLayer}
         />
